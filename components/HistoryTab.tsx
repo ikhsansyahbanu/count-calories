@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { FoodLog } from '@/lib/types'
+import { FoodLog, User } from '@/lib/types'
 import styles from './HistoryTab.module.css'
 
 interface DayGroup {
@@ -10,7 +10,7 @@ interface DayGroup {
   target: number
 }
 
-export default function HistoryTab() {
+export default function HistoryTab({ user }: { user: User | null }) {
   const [groups, setGroups] = useState<DayGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +21,8 @@ export default function HistoryTab() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/history?limit=200')
+      const userParam = user?.id ? `&user_id=${user.id}` : ''
+      const res = await fetch(`/api/history?limit=200${userParam}`)
       const json = await res.json()
       if (!json.success) throw new Error()
 

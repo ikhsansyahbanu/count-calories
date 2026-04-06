@@ -1,13 +1,13 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FoodLog } from '@/lib/types'
+import { FoodLog, User } from '@/lib/types'
 import styles from './AnalyzeTab.module.css'
 
-export default function AnalyzeTab() {
+export default function AnalyzeTab({ user }: { user: User | null }) {
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState('image/jpeg')
-  const [target, setTarget] = useState(2000)
+  const [target, setTarget] = useState(user?.target_kalori || 2000)
   const [keterangan, setKeterangan] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<FoodLog | null>(null)
@@ -56,7 +56,7 @@ export default function AnalyzeTab() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan })
+        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan, user_id: user?.id })
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error)

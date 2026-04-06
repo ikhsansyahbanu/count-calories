@@ -1,3 +1,12 @@
+export interface User {
+  id: number
+  nama: string
+  berat_badan: number
+  tinggi_badan: number
+  target_kalori: number
+  created_at: string
+}
+
 export interface FoodLog {
   id: number
   nama: string

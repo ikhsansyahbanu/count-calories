@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { DaySummary } from '@/lib/types'
+import { DaySummary, User } from '@/lib/types'
 import styles from './SummaryTab.module.css'
 
-export default function SummaryTab() {
+export default function SummaryTab({ user }: { user: User | null }) {
   const [data, setData] = useState<DaySummary[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(7)
@@ -11,7 +11,8 @@ export default function SummaryTab() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/summary?days=${days}`)
+      const userParam = user?.id ? `&user_id=${user.id}` : ''
+      const res = await fetch(`/api/summary?days=${days}${userParam}`)
       const json = await res.json()
       if (json.success) setData(json.data.reverse())
     } finally {

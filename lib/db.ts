@@ -15,8 +15,19 @@ const pool = new Pool(
 
 export async function initDB() {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      nama VARCHAR(100) NOT NULL,
+      berat_badan NUMERIC(5,1) DEFAULT 0,
+      tinggi_badan NUMERIC(5,1) DEFAULT 0,
+      target_kalori INTEGER DEFAULT 2000,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS food_logs (
       id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       nama VARCHAR(255),
       porsi VARCHAR(255),
       total_kalori INTEGER,
@@ -30,9 +41,8 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
-  await pool.query(`
-    ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''
-  `)
+  await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''`)
+  await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`)
 }
 
 export default pool

@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     await initDB()
 
     const body = await req.json()
-    const { image_base64, media_type = 'image/jpeg', target_kalori = 2000, keterangan = '' } = body
+    const { image_base64, media_type = 'image/jpeg', target_kalori = 2000, keterangan = '', user_id } = body
 
     if (!image_base64) {
       return NextResponse.json({ error: 'Tidak ada foto yang dikirim' }, { status: 400 })
@@ -65,10 +65,10 @@ Estimasi serealistis mungkin berdasarkan visual. Jika tidak ada makanan, isi tot
     const parsed: AnalyzeResult = JSON.parse(clean)
 
     const result = await pool.query(
-      `INSERT INTO food_logs (nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
-        parsed.nama, parsed.porsi, parsed.total_kalori,
+        user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
         parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
         JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan
       ]

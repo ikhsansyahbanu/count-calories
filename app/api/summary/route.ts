@@ -6,6 +6,14 @@ export async function GET(req: NextRequest) {
     await initDB()
     const { searchParams } = new URL(req.url)
     const days = parseInt(searchParams.get('days') || '7')
+    const user_id = searchParams.get('user_id')
+
+    const params: (string | number)[] = [days]
+    let userFilter = ''
+    if (user_id) {
+      params.push(user_id)
+      userFilter = `AND user_id = $${params.length}`
+    }
 
     const result = await pool.query(`
       SELECT
@@ -17,10 +25,11 @@ export async function GET(req: NextRequest) {
         COUNT(*)::integer as jumlah_makan,
         MAX(target_kalori)::integer as target_kalori
       FROM food_logs
-      WHERE created_at >= NOW() - INTERVAL '${days} days'
+      WHERE created_at >= NOW() - ($1 || ' days')::interval
+      ${userFilter}
       GROUP BY DATE(created_at AT TIME ZONE 'Asia/Jakarta')
       ORDER BY tanggal DESC
-    `)
+    `, params)
 
     return NextResponse.json({ success: true, data: result.rows })
 

@@ -49,6 +49,46 @@
   letter-spacing: 0.02em;
 }
 
+.userPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 6px 12px 6px 6px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.userPill:hover { border-color: var(--accent); background: var(--accent-light); }
+
+.userPillAvatar {
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.userPillInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.userPillName { font-size: 0.82rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.userPillMeta { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+.userPillEdit { font-size: 11px; opacity: 0.5; }
+
 .tabs {
   display: flex;
   gap: 6px;

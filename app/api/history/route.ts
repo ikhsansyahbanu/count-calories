@@ -8,16 +8,21 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100')
     const date = searchParams.get('date')
 
-    let query = 'SELECT * FROM food_logs'
+    const user_id = searchParams.get('user_id')
+    let query = 'SELECT * FROM food_logs WHERE 1=1'
     const params: (string | number)[] = []
 
+    if (user_id) {
+      params.push(user_id)
+      query += ` AND user_id = $${params.length}`
+    }
     if (date) {
-      query += ' WHERE DATE(created_at) = $1'
       params.push(date)
+      query += ` AND DATE(created_at) = $${params.length}`
     }
 
-    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1}`
     params.push(limit)
+    query += ` ORDER BY created_at DESC LIMIT $${params.length}`
 
     const result = await pool.query(query, params)
     return NextResponse.json({ success: true, data: result.rows })
