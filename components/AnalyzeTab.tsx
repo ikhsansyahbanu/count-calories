@@ -86,7 +86,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const json = await res.json()
       if (json.success) {
         setSavedFavId(json.data.id)
-        loadFavorites()
+        if (!json.duplicate) {
+          setFavorites(prev => [json.data, ...prev])
+        }
       }
     } finally {
       setSavingFav(false)
@@ -94,9 +96,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   }
 
   async function deleteFavorite(id: number) {
-    await fetch(`/api/favorites?id=${id}`, { method: 'DELETE' })
+    fetch(`/api/favorites?id=${id}`, { method: 'DELETE' })
     if (savedFavId === id) setSavedFavId(null)
-    loadFavorites()
+    setFavorites(prev => prev.filter(f => f.id !== id))
   }
 
   async function relogFavorite(fav: FoodFavorite) {
