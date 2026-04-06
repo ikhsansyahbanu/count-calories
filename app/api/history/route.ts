@@ -28,6 +28,20 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const { id, nama } = await req.json()
+    if (!id || !nama) return NextResponse.json({ error: 'ID dan nama wajib diisi' }, { status: 400 })
+
+    await pool.query('UPDATE food_logs SET nama = $1 WHERE id = $2', [nama, id])
+    return NextResponse.json({ success: true })
+
+  } catch (err) {
+    console.error('[/api/history PATCH]', err)
+    return NextResponse.json({ error: 'Gagal mengupdate nama' }, { status: 500 })
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)

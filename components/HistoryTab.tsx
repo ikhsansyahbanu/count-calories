@@ -14,6 +14,8 @@ export default function HistoryTab() {
   const [groups, setGroups] = useState<DayGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +45,22 @@ export default function HistoryTab() {
 
   async function deleteLog(id: number) {
     await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
+    load()
+  }
+
+  function startEdit(row: FoodLog) {
+    setEditingId(row.id)
+    setEditValue(row.nama)
+  }
+
+  async function saveEdit(id: number) {
+    if (!editValue.trim()) return
+    await fetch('/api/history', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, nama: editValue.trim() })
+    })
+    setEditingId(null)
     load()
   }
 
@@ -99,10 +117,25 @@ export default function HistoryTab() {
               return (
                 <div key={row.id} className={styles.logItem}>
                   <div className={styles.logLeft}>
-                    <div className={styles.logName}>
-                      {row.keterangan && <span className={styles.logKet}>{row.keterangan}</span>}
-                      {row.nama}
-                    </div>
+                    {editingId === row.id ? (
+                      <div className={styles.editRow}>
+                        <input
+                          className={styles.editInput}
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(row.id); if (e.key === 'Escape') setEditingId(null) }}
+                          autoFocus
+                        />
+                        <button className={styles.editSaveBtn} onClick={() => saveEdit(row.id)}>Simpan</button>
+                        <button className={styles.editCancelBtn} onClick={() => setEditingId(null)}>Batal</button>
+                      </div>
+                    ) : (
+                      <div className={styles.logName}>
+                        {row.keterangan && <span className={styles.logKet}>{row.keterangan}</span>}
+                        {row.nama}
+                        <button className={styles.editBtn} onClick={() => startEdit(row)} title="Edit nama">✏️</button>
+                      </div>
+                    )}
                     <div className={styles.logMeta}>
                       {row.porsi} · {time}
                       {items.length > 0 && ` · ${items.length} item`}

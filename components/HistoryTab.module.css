@@ -108,3 +108,54 @@
   transition: color 0.2s, background 0.2s;
 }
 .deleteBtn:hover { color: var(--red); background: var(--red-light); }
+
+.editBtn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+.logItem:hover .editBtn { opacity: 1; }
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.editInput {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  outline: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.editSaveBtn {
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+.editCancelBtn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
