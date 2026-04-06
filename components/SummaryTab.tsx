@@ -37,8 +37,27 @@ export default function SummaryTab() {
 
   const avgKal = Math.round(data.reduce((s, d) => s + d.total_kalori, 0) / data.length)
   const avgProtein = Math.round(data.reduce((s, d) => s + Number(d.total_protein), 0) / data.length)
+  const avgKarbo = Math.round(data.reduce((s, d) => s + Number(d.total_karbo), 0) / data.length)
+  const avgLemak = Math.round(data.reduce((s, d) => s + Number(d.total_lemak), 0) / data.length)
   const target = data[data.length - 1]?.target_kalori || 2000
   const maxKal = Math.max(...data.map(d => d.total_kalori), target)
+
+  const saranList: { type: 'warning' | 'danger' | 'good'; text: string }[] = []
+  const kalPct = Math.round((avgKal / target) * 100)
+
+  if (kalPct > 120) saranList.push({ type: 'danger', text: `Rata-rata kalori kamu ${kalPct}% dari target — terlalu tinggi. Kurangi porsi nasi, gorengan, atau minuman manis.` })
+  else if (kalPct > 100) saranList.push({ type: 'warning', text: `Rata-rata kalori sedikit melebihi target (${kalPct}%). Coba kurangi 1 porsi camilan per hari.` })
+  else if (kalPct < 70) saranList.push({ type: 'warning', text: `Asupan kalori terlalu rendah (${kalPct}% dari target). Pastikan makan cukup agar energi tetap optimal.` })
+  else saranList.push({ type: 'good', text: `Asupan kalori kamu terkontrol dengan baik (${kalPct}% dari target). Pertahankan!` })
+
+  if (avgProtein > 175) saranList.push({ type: 'warning', text: `Protein rata-rata ${avgProtein}g/hari — di atas batas ideal 175g. Kurangi suplemen protein atau porsi daging.` })
+  else if (avgProtein < 50) saranList.push({ type: 'danger', text: `Protein terlalu rendah (${avgProtein}g/hari). Tambahkan telur, tahu, tempe, atau daging tanpa lemak.` })
+
+  if (avgKarbo > 300) saranList.push({ type: 'danger', text: `Karbohidrat rata-rata ${avgKarbo}g/hari — terlalu tinggi. Ganti nasi putih dengan nasi merah atau batasi roti & mi.` })
+  else if (avgKarbo > 250) saranList.push({ type: 'warning', text: `Karbohidrat ${avgKarbo}g/hari sedikit berlebihan. Coba kurangi porsi nasi atau pilih karbohidrat kompleks.` })
+
+  if (avgLemak > 80) saranList.push({ type: 'danger', text: `Lemak rata-rata ${avgLemak}g/hari — melebihi batas. Hindari gorengan dan pilih metode masak yang lebih sehat.` })
+  else if (avgLemak > 70) saranList.push({ type: 'warning', text: `Lemak ${avgLemak}g/hari mendekati batas atas. Kurangi makanan berminyak atau santan berlebih.` })
 
   return (
     <div className={styles.wrap}>
@@ -109,6 +128,19 @@ export default function SummaryTab() {
             )
           })}
         </div>
+      </div>
+
+      {/* Saran */}
+      <div className={styles.saranCard}>
+        <div className={styles.chartTitle}>Saran & Evaluasi</div>
+        {saranList.map((s, i) => (
+          <div key={i} className={`${styles.saranItem} ${styles[s.type]}`}>
+            <span className={styles.saranIcon}>
+              {s.type === 'good' ? '✅' : s.type === 'warning' ? '⚠️' : '🚨'}
+            </span>
+            <span>{s.text}</span>
+          </div>
+        ))}
       </div>
 
       {/* Macro breakdown */}

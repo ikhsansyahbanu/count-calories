@@ -104,6 +104,48 @@
 .barInner { width: 100%; border-radius: 6px 6px 3px 3px; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); min-height: 4px; }
 .barLabel { font-size: 0.62rem; color: var(--muted); text-align: center; white-space: nowrap; font-weight: 500; }
 
+.saranCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.saranItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 0.83rem;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.saranIcon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+.good {
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  color: var(--text2);
+}
+
+.warning {
+  background: var(--amber-light);
+  border: 1px solid rgba(212,147,10,0.25);
+  color: #7a5500;
+}
+
+.danger {
+  background: var(--red-light);
+  border: 1px solid rgba(224,82,82,0.25);
+  color: #8b2020;
+}
+
 .macroCard {
   background: var(--surface);
   border: 1px solid var(--border);
