@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { FoodLog, User } from '@/lib/types'
 import styles from './AnalyzeTab.module.css'
 
@@ -35,6 +35,11 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+  }, [])
 
   function handleFile(file: File) {
     setMediaType('image/jpeg')
@@ -209,11 +214,13 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
               <div className={styles.uploadSub}>JPG, PNG, HEIC</div>
 
               <div className={styles.uploadBtns}>
-                <button type="button" className={styles.uploadBtn} onClick={() => fileRef.current?.click()}>
-                  📷 Kamera
-                </button>
+                {isMobile && (
+                  <button type="button" className={styles.uploadBtn} onClick={() => fileRef.current?.click()}>
+                    📷 Kamera
+                  </button>
+                )}
                 <button type="button" className={styles.uploadBtn} onClick={() => galleryRef.current?.click()}>
-                  🖼️ Galeri / File
+                  {isMobile ? '🖼️ Galeri' : '📁 Upload File'}
                 </button>
               </div>
             </div>
