@@ -8,6 +8,8 @@ export interface User {
   aktivitas: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
   target_kalori: number
   created_at: string
+  streak?: number
+  last_log_date?: string
 }
 
 export interface FoodLog {

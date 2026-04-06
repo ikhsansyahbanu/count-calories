@@ -1,0 +1,164 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.4s ease both;
+  margin-bottom: 0;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cardTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.streak {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text2);
+  background: var(--amber-light);
+  border: 1px solid rgba(212, 147, 10, 0.25);
+  border-radius: 99px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+.streakFirst {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.empty {
+  font-size: 0.84rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.kalRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.kalBig {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.kalSep {
+  font-size: 0.9rem;
+  color: var(--muted2);
+  font-weight: 500;
+}
+
+.kalTarget {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.kalUnit {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.progressWrap {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.progressBg {
+  height: 8px;
+  background: var(--surface3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.progressFillBlue  { background: var(--blue); }
+.progressFillGreen { background: var(--accent); }
+.progressFillAmber { background: var(--amber); }
+.progressFillRed   { background: var(--red); }
+
+.progressPct {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.statusMsg {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+}
+
+.statusBlue  { background: #e8f0fd; color: var(--blue); }
+.statusGreen { background: var(--accent-light); color: var(--accent); }
+.statusAmber { background: var(--amber-light); color: var(--amber); }
+.statusRed   { background: var(--red-light); color: var(--red); }
+
+.macros {
+  display: flex;
+  gap: 10px;
+}
+
+.macroPill {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.macroVal {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.macroLbl {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.protein { color: var(--teal); }
+.karbo   { color: var(--amber); }
+.lemak   { color: var(--red); }
+
+.skeleton {
+  background: var(--surface3);
+  border-radius: 6px;
+  animation: pulse 1.2s ease infinite;
+}

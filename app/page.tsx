@@ -4,6 +4,7 @@ import AnalyzeTab from '@/components/AnalyzeTab'
 import HistoryTab from '@/components/HistoryTab'
 import SummaryTab from '@/components/SummaryTab'
 import UserModal from '@/components/UserModal'
+import DailyProgress from '@/components/DailyProgress'
 import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
@@ -14,10 +15,15 @@ function AppContent() {
   const { user, setUser } = useUser()
   const [tab, setTab] = useState<Tab>('analyze')
   const [showUserModal, setShowUserModal] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   function handleSelectUser(u: User | null) {
     setUser(u)
     if (u) setShowUserModal(false)
+  }
+
+  function handleAnalyzed() {
+    setRefreshKey(k => k + 1)
   }
 
   const bmi = user?.berat_badan && user?.tinggi_badan
@@ -57,6 +63,8 @@ function AppContent() {
         )}
       </header>
 
+      <DailyProgress user={user} refreshKey={refreshKey} />
+
       <div className={styles.tabs}>
         {(['analyze', 'history', 'summary'] as Tab[]).map(t => (
           <button
@@ -70,8 +78,8 @@ function AppContent() {
       </div>
 
       <div className={styles.content}>
-        {tab === 'analyze' && <AnalyzeTab user={user} />}
-        {tab === 'history' && <HistoryTab user={user} />}
+        {tab === 'analyze' && <AnalyzeTab user={user} onAnalyzed={handleAnalyzed} />}
+        {tab === 'history' && <HistoryTab user={user} refreshKey={refreshKey} />}
         {tab === 'summary' && <SummaryTab user={user} />}
       </div>
     </main>

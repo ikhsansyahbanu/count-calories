@@ -13,7 +13,7 @@ interface DayGroup {
 
 type FilterOption = 'Semua' | 'Makan Pagi' | 'Makan Siang' | 'Makan Malam' | 'Snack' | 'Manual'
 
-export default function HistoryTab({ user }: { user: User | null }) {
+export default function HistoryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
   const [allLogs, setAllLogs] = useState<FoodLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,9 +41,15 @@ export default function HistoryTab({ user }: { user: User | null }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, refreshKey])
+
+  // Bug Fix 3: reset filter when user changes
+  useEffect(() => {
+    setSearchQuery('')
+    setActiveFilter('Semua')
+  }, [user?.id])
 
   async function deleteLog(id: number) {
     await fetch(`/api/history?id=${id}`, { method: 'DELETE' })

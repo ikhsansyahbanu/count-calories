@@ -10,7 +10,7 @@ type MetodeMasakOption = 'Goreng' | 'Bakar' | 'Rebus' | 'Kukus' | 'Mentah'
 type MinumanManisOption = 'Tidak Manis' | 'Sedikit Manis' | 'Manis' | 'Sangat Manis'
 type MinumanSuhuOption = 'Dingin' | 'Hangat' | 'Panas'
 
-export default function AnalyzeTab({ user }: { user: User | null }) {
+export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; onAnalyzed?: () => void }) {
   const [inputMode, setInputMode] = useState<InputMode>('foto')
 
   // Foto mode state
@@ -40,6 +40,10 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
   }, [])
+
+  useEffect(() => {
+    if (user?.target_kalori) setTarget(user.target_kalori)
+  }, [user?.target_kalori])
 
   function handleFile(file: File) {
     setMediaType('image/jpeg')
@@ -127,6 +131,7 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
       setResult(json.data)
+      onAnalyzed?.()
     } catch {
       setError('Gagal menganalisis foto. Coba lagi dengan foto yang lebih jelas.')
     } finally {
@@ -160,6 +165,7 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
       setResult(json.data)
+      onAnalyzed?.()
     } catch {
       setError('Gagal mengestimasi kalori. Coba lagi.')
     } finally {

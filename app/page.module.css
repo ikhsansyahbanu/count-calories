@@ -97,6 +97,7 @@
   padding: 5px;
   width: 100%;
   max-width: 520px;
+  margin-top: 0.75rem;
   margin-bottom: 1.25rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);

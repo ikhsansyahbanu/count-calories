@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool, { initDB } from '@/lib/db'
+import pool, { initDB, updateStreak } from '@/lib/db'
 import { AnalyzeResult } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -110,6 +110,8 @@ Return ONLY valid JSON, no other text, no markdown:
         parsed.confidence || 'medium'
       ]
     )
+
+    if (user_id) await updateStreak(user_id)
 
     return NextResponse.json({ success: true, data: result.rows[0] })
 
