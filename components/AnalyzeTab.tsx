@@ -34,6 +34,7 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
   const [result, setResult] = useState<FoodLog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
 
   function handleFile(file: File) {
     setMediaType('image/jpeg')
@@ -85,6 +86,7 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
     setResult(null)
     setError(null)
     if (fileRef.current) fileRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
   }
 
   function resetManual() {
@@ -191,21 +193,29 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
       {inputMode === 'foto' && (
         <>
           {!imagePreview ? (
-            <div
-              className={styles.uploadArea}
-              onDrop={onDrop}
-              onDragOver={e => e.preventDefault()}
-              onClick={() => fileRef.current?.click()}
-            >
+            <div className={styles.uploadArea} onDrop={onDrop} onDragOver={e => e.preventDefault()}>
+              {/* Input kamera */}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} hidden />
+              {/* Input galeri/file */}
+              <input ref={galleryRef} type="file" accept="image/*" onChange={onFileChange} hidden />
+
               <div className={styles.uploadIcon}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                   <circle cx="12" cy="13" r="4"/>
                 </svg>
               </div>
-              <div className={styles.uploadTitle}>Foto atau upload makanan</div>
-              <div className={styles.uploadSub}>JPG, PNG, HEIC · tap untuk kamera</div>
+              <div className={styles.uploadTitle}>Unggah foto makanan</div>
+              <div className={styles.uploadSub}>JPG, PNG, HEIC</div>
+
+              <div className={styles.uploadBtns}>
+                <button type="button" className={styles.uploadBtn} onClick={() => fileRef.current?.click()}>
+                  📷 Kamera
+                </button>
+                <button type="button" className={styles.uploadBtn} onClick={() => galleryRef.current?.click()}>
+                  🖼️ Galeri / File
+                </button>
+              </div>
             </div>
           ) : (
             <div className={styles.previewWrap}>

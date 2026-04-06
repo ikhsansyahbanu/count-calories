@@ -127,6 +127,26 @@
   box-shadow: var(--shadow);
 }
 
+.uploadBtns {
+  display: flex;
+  gap: 8px;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.uploadBtn {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 9px 18px;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.uploadBtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
 .uploadIcon {
   width: 60px;
   height: 60px;
