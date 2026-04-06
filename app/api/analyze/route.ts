@@ -38,7 +38,7 @@ Estimasi serealistis mungkin berdasarkan visual. Jika tidak ada makanan, isi tot
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5',
+        model: 'google/gemini-2.5-flash',
         max_tokens: 1000,
         messages: [{
           role: 'user',
