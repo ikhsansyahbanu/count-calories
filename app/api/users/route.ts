@@ -15,13 +15,13 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     await initDB()
-    const { nama, berat_badan, tinggi_badan, target_kalori } = await req.json()
+    const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = await req.json()
     if (!nama) return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 })
 
     const result = await pool.query(
-      `INSERT INTO users (nama, berat_badan, tinggi_badan, target_kalori)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [nama, berat_badan || 0, tinggi_badan || 0, target_kalori || 2000]
+      `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [nama, berat_badan || 0, tinggi_badan || 0, usia || 0, jenis_kelamin || 'laki-laki', aktivitas || 'moderate', target_kalori || 2000]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { id, nama, berat_badan, tinggi_badan, target_kalori } = await req.json()
+    const { id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = await req.json()
     if (!id) return NextResponse.json({ error: 'ID wajib diisi' }, { status: 400 })
 
     const result = await pool.query(
-      `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, target_kalori=$4
-       WHERE id=$5 RETURNING *`,
-      [nama, berat_badan, tinggi_badan, target_kalori, id]
+      `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7
+       WHERE id=$8 RETURNING *`,
+      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, id]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {

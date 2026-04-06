@@ -3,6 +3,9 @@ export interface User {
   nama: string
   berat_badan: number
   tinggi_badan: number
+  usia: number
+  jenis_kelamin: 'laki-laki' | 'perempuan'
+  aktivitas: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
   target_kalori: number
   created_at: string
 }

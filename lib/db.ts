@@ -20,10 +20,16 @@ export async function initDB() {
       nama VARCHAR(100) NOT NULL,
       berat_badan NUMERIC(5,1) DEFAULT 0,
       tinggi_badan NUMERIC(5,1) DEFAULT 0,
+      usia INTEGER DEFAULT 0,
+      jenis_kelamin VARCHAR(20) DEFAULT 'laki-laki',
+      aktivitas VARCHAR(20) DEFAULT 'moderate',
       target_kalori INTEGER DEFAULT 2000,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS usia INTEGER DEFAULT 0`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS jenis_kelamin VARCHAR(20) DEFAULT 'laki-laki'`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aktivitas VARCHAR(20) DEFAULT 'moderate'`)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS food_logs (
       id SERIAL PRIMARY KEY,
