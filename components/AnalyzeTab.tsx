@@ -44,16 +44,20 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        const MAX = 1024
+        const MAX = 800
         let { width, height } = img
-        if (width > MAX || height > MAX) {
-          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
-          else { width = Math.round(width * MAX / height); height = MAX }
-        }
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+        else { width = Math.round(width * MAX / height); height = MAX }
         canvas.width = width
         canvas.height = height
         canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-        const compressed = canvas.toDataURL('image/jpeg', 0.8)
+        // Compress sampai di bawah 1MB
+        let quality = 0.7
+        let compressed = canvas.toDataURL('image/jpeg', quality)
+        while (compressed.length > 1_300_000 && quality > 0.3) {
+          quality -= 0.1
+          compressed = canvas.toDataURL('image/jpeg', quality)
+        }
         setImageBase64(compressed.split(',')[1])
         setImagePreview(compressed)
         setResult(null)
