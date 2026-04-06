@@ -1,0 +1,147 @@
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { DaySummary } from '@/lib/types'
+import styles from './SummaryTab.module.css'
+
+export default function SummaryTab() {
+  const [data, setData] = useState<DaySummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState(7)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/summary?days=${days}`)
+      const json = await res.json()
+      if (json.success) setData(json.data.reverse())
+    } finally {
+      setLoading(false)
+    }
+  }, [days])
+
+  useEffect(() => { load() }, [load])
+
+  if (loading) return (
+    <div className={styles.loadingWrap}>
+      <div className={styles.spinner} />
+    </div>
+  )
+
+  if (data.length === 0) return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyIcon}>📊</div>
+      <p>Belum ada data</p>
+      <span>Mulai analisis makanan untuk melihat ringkasan</span>
+    </div>
+  )
+
+  const avgKal = Math.round(data.reduce((s, d) => s + d.total_kalori, 0) / data.length)
+  const avgProtein = Math.round(data.reduce((s, d) => s + Number(d.total_protein), 0) / data.length)
+  const target = data[data.length - 1]?.target_kalori || 2000
+  const maxKal = Math.max(...data.map(d => d.total_kalori), target)
+
+  return (
+    <div className={styles.wrap}>
+      <div className={styles.topBar}>
+        <h2 className={styles.title}>Ringkasan</h2>
+        <div className={styles.daySwitch}>
+          {[7, 14, 30].map(d => (
+            <button
+              key={d}
+              className={`${styles.dayBtn} ${days === d ? styles.dayBtnActive : ''}`}
+              onClick={() => setDays(d)}
+            >
+              {d}h
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statVal} style={{ color: 'var(--accent)' }}>{avgKal}</div>
+          <div className={styles.statLbl}>Rata-rata kkal/hari</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statVal} style={{ color: 'var(--teal)' }}>{avgProtein}g</div>
+          <div className={styles.statLbl}>Rata-rata protein</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statVal}>{data.length}</div>
+          <div className={styles.statLbl}>Hari tercatat</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statVal} style={{ color: avgKal <= target ? 'var(--accent)' : 'var(--red)' }}>
+            {Math.round((avgKal / target) * 100)}%
+          </div>
+          <div className={styles.statLbl}>Dari target</div>
+        </div>
+      </div>
+
+      {/* Bar chart */}
+      <div className={styles.chartCard}>
+        <div className={styles.chartTitle}>Kalori Harian</div>
+        <div className={styles.targetLine} style={{ bottom: `${(target / maxKal) * 100}%` }}>
+          <span className={styles.targetLineLabel}>Target {target}</span>
+        </div>
+        <div className={styles.chart}>
+          {data.map((d, i) => {
+            const height = (d.total_kalori / maxKal) * 100
+            const over = d.total_kalori > target
+            const date = new Date(d.tanggal)
+            const label = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+            return (
+              <div key={i} className={styles.barWrap}>
+                <div className={styles.barKal}>{d.total_kalori}</div>
+                <div className={styles.barOuter}>
+                  <div
+                    className={styles.barInner}
+                    style={{
+                      height: `${height}%`,
+                      background: over ? 'var(--red)' : 'var(--accent)',
+                      opacity: 0.85 + (i / data.length) * 0.15
+                    }}
+                  />
+                </div>
+                <div className={styles.barLabel}>{label}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Macro breakdown */}
+      <div className={styles.macroCard}>
+        <div className={styles.chartTitle}>Rata-rata Makronutrien / Hari</div>
+        {[
+          { label: 'Protein', val: avgProtein, max: 175, color: 'var(--teal)', unit: 'g', target: '150–175g' },
+          {
+            label: 'Karbo', unit: 'g', target: '150–200g', color: 'var(--amber)',
+            val: Math.round(data.reduce((s, d) => s + Number(d.total_karbo), 0) / data.length),
+            max: 250
+          },
+          {
+            label: 'Lemak', unit: 'g', target: '50–70g', color: 'var(--red)',
+            val: Math.round(data.reduce((s, d) => s + Number(d.total_lemak), 0) / data.length),
+            max: 100
+          },
+        ].map(m => (
+          <div key={m.label} className={styles.macroRow}>
+            <div className={styles.macroMeta}>
+              <span className={styles.macroName}>{m.label}</span>
+              <span className={styles.macroVal} style={{ color: m.color }}>{m.val}{m.unit}</span>
+            </div>
+            <div className={styles.macroBarBg}>
+              <div
+                className={styles.macroBarFill}
+                style={{ width: `${Math.min((m.val / m.max) * 100, 100)}%`, background: m.color }}
+              />
+            </div>
+            <div className={styles.macroTarget}>Target: {m.target}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,67 @@
+.main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1rem 5rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: fadeUp 0.5s ease both;
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.tagline {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 4px;
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 1.25rem;
+  animation: fadeUp 0.5s 0.1s ease both;
+}
+
+.tab {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: all 0.18s;
+}
+
+.tab:hover { color: var(--text); }
+
+.tabActive {
+  background: var(--surface2);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.content {
+  width: 100%;
+  max-width: 520px;
+  animation: fadeUp 0.5s 0.15s ease both;
+}
