@@ -35,6 +35,7 @@ export interface FoodItem {
 }
 
 export interface AnalyzeResult {
+  is_food?: boolean
   nama: string
   porsi: string
   total_kalori: number

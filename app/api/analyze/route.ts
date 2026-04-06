@@ -39,11 +39,13 @@ Instructions:
 - Include hidden calories: cooking oil, sugar, sauces, coconut milk, condiments
 - If food is Indonesian, prioritize local knowledge and reference data above
 - Sum of items calories must be close to total_kalori
-- If no food is visible, set total_kalori to 0
+- If no food or drink is visible in the image, set is_food to false and total_kalori to 0
+- If food or drink IS visible, set is_food to true and analyze normally
 - For saran: give specific personalized advice based on the actual food eaten and the user's daily target of ${target_kalori} kcal
 
 Return ONLY valid JSON, no other text, no markdown:
 {
+  "is_food": true,
   "nama": "nama hidangan utama dalam Bahasa Indonesia",
   "porsi": "estimasi total porsi (misal: 1 piring 350g)",
   "total_kalori": angka,
@@ -99,6 +101,10 @@ Return ONLY valid JSON, no other text, no markdown:
       return NextResponse.json({ error: 'AI tidak dapat menganalisis foto ini' }, { status: 500 })
     }
     const parsed: AnalyzeResult = JSON.parse(jsonMatch[0])
+
+    if (parsed.is_food === false) {
+      return NextResponse.json({ error: 'Foto tidak mengandung makanan atau minuman. Coba foto yang lain.' }, { status: 422 })
+    }
 
     const result = await pool.query(
       `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence)

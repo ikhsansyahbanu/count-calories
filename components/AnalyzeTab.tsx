@@ -129,11 +129,11 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan, user_id: user?.id })
       })
       const json = await res.json()
-      if (!json.success) throw new Error(json.error)
+      if (!json.success) throw new Error(json.error || 'Gagal menganalisis foto.')
       setResult(json.data)
       onAnalyzed?.()
-    } catch {
-      setError('Gagal menganalisis foto. Coba lagi dengan foto yang lebih jelas.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menganalisis foto. Coba lagi dengan foto yang lebih jelas.')
     } finally {
       setLoading(false)
     }
