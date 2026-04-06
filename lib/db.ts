@@ -1,8 +1,12 @@
 import { Pool } from 'pg'
 
+const connectionString = process.env.DATABASE_URL
+  ?.replace('sslmode=require', 'sslmode=verify-full')
+  ?.replace('sslmode=prefer', 'sslmode=verify-full')
+
 const pool = new Pool(
-  process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL.includes('sslmode=') ? process.env.DATABASE_URL : `${process.env.DATABASE_URL}${process.env.DATABASE_URL.includes('?') ? '&' : '?'}sslmode=verify-full`, ssl: true }
+  connectionString
+    ? { connectionString, ssl: true }
     : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
