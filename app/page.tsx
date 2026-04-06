@@ -13,7 +13,10 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <div className={styles.logo}>KALORI.AI</div>
+        <div className={styles.logoWrap}>
+          <div className={styles.logoIcon}>🥗</div>
+          <div className={styles.logo}>Kalori<span>.AI</span></div>
+        </div>
         <p className={styles.tagline}>foto makanan → kalori instan</p>
       </header>
 
