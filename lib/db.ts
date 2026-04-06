@@ -58,6 +58,20 @@ export async function initDB() {
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS manual BOOLEAN DEFAULT FALSE`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_log_date DATE`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0`)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS food_favorites (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      nama VARCHAR(255),
+      porsi VARCHAR(255),
+      total_kalori INTEGER,
+      protein_g NUMERIC(6,1),
+      karbo_g NUMERIC(6,1),
+      lemak_g NUMERIC(6,1),
+      items JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
 }
 
 export async function updateStreak(userId: number) {

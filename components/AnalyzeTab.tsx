@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { FoodLog, User } from '@/lib/types'
+import { FoodLog, FoodFavorite, User } from '@/lib/types'
 import styles from './AnalyzeTab.module.css'
 
 type InputMode = 'foto' | 'manual'
@@ -37,6 +37,12 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   const galleryRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Favorites state
+  const [favorites, setFavorites] = useState<FoodFavorite[]>([])
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [savingFav, setSavingFav] = useState(false)
+  const [savedFavId, setSavedFavId] = useState<number | null>(null)
+
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
   }, [])
@@ -44,6 +50,76 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   useEffect(() => {
     if (user?.target_kalori) setTarget(user.target_kalori)
   }, [user?.target_kalori])
+
+  useEffect(() => {
+    loadFavorites()
+    setSavedFavId(null)
+  }, [user?.id])
+
+  async function loadFavorites() {
+    if (!user?.id) return
+    try {
+      const res = await fetch(`/api/favorites?user_id=${user.id}`)
+      const json = await res.json()
+      if (json.success) setFavorites(json.data)
+    } catch { /* silent */ }
+  }
+
+  async function saveFavorite() {
+    if (!result || !user?.id) return
+    setSavingFav(true)
+    try {
+      const res = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          nama: result.nama,
+          porsi: result.porsi,
+          total_kalori: result.total_kalori,
+          protein_g: result.protein_g,
+          karbo_g: result.karbo_g,
+          lemak_g: result.lemak_g,
+          items: result.items
+        })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setSavedFavId(json.data.id)
+        loadFavorites()
+      }
+    } finally {
+      setSavingFav(false)
+    }
+  }
+
+  async function deleteFavorite(id: number) {
+    await fetch(`/api/favorites?id=${id}`, { method: 'DELETE' })
+    if (savedFavId === id) setSavedFavId(null)
+    loadFavorites()
+  }
+
+  async function relogFavorite(fav: FoodFavorite) {
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setShowFavorites(false)
+    try {
+      const res = await fetch('/api/favorites/relog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ favorite_id: fav.id, user_id: user?.id, keterangan, target_kalori: target })
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error)
+      setResult(json.data)
+      onAnalyzed?.()
+    } catch {
+      setError('Gagal log ulang favorit.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function handleFile(file: File) {
     setMediaType('image/jpeg')
@@ -199,6 +275,32 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           Manual
         </button>
       </div>
+
+      {/* Favorites section */}
+      {favorites.length > 0 && (
+        <div className={styles.favSection}>
+          <button className={styles.favSectionHeader} onClick={() => setShowFavorites(!showFavorites)}>
+            <span>⭐ Favorit Saya ({favorites.length})</span>
+            <span className={styles.favChevron}>{showFavorites ? '▲' : '▼'}</span>
+          </button>
+          {showFavorites && (
+            <div className={styles.favList}>
+              {favorites.map(fav => (
+                <div key={fav.id} className={styles.favItem}>
+                  <div className={styles.favItemInfo}>
+                    <div className={styles.favItemName}>{fav.nama}</div>
+                    <div className={styles.favItemMeta}>{fav.total_kalori} kkal · {fav.porsi}</div>
+                  </div>
+                  <div className={styles.favItemActions}>
+                    <button className={styles.favRelogBtn} onClick={() => relogFavorite(fav)}>Log</button>
+                    <button className={styles.favDeleteBtn} onClick={() => deleteFavorite(fav.id)}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* FOTO MODE */}
       {inputMode === 'foto' && (
@@ -415,8 +517,21 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       {result && (
         <div className={styles.resultCard}>
           <div className={styles.resultHeader}>
-            <div className={styles.resultName}>{result.nama}</div>
-            <div className={styles.resultPortion}>{result.porsi}</div>
+            <div className={styles.resultHeaderTop}>
+              <div>
+                <div className={styles.resultName}>{result.nama}</div>
+                <div className={styles.resultPortion}>{result.porsi}</div>
+              </div>
+              {user && (
+                <button
+                  className={`${styles.favBtn} ${savedFavId ? styles.favBtnSaved : ''}`}
+                  onClick={savedFavId ? () => deleteFavorite(savedFavId) : saveFavorite}
+                  disabled={savingFav}
+                >
+                  {savedFavId ? '⭐' : '☆'}
+                </button>
+              )}
+            </div>
             {result.confidence && (
               <div className={`${styles.confidenceBadge} ${styles[`confidence_${result.confidence}`]}`}>
                 {result.confidence === 'high' ? '✅ Akurasi Tinggi' : result.confidence === 'medium' ? '⚠️ Akurasi Sedang' : '❓ Akurasi Rendah'}

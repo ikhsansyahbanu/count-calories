@@ -18,7 +18,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
     } finally {
       setLoading(false)
     }
-  }, [days])
+  }, [days, user?.id])
 
   useEffect(() => { load() }, [load])
 
@@ -101,33 +101,40 @@ export default function SummaryTab({ user }: { user: User | null }) {
 
       {/* Bar chart */}
       <div className={styles.chartCard}>
-        <div className={styles.chartTitle}>Kalori Harian</div>
-        <div className={styles.targetLine} style={{ bottom: `${(target / maxKal) * 100}%` }}>
-          <span className={styles.targetLineLabel}>Target {target}</span>
-        </div>
-        <div className={styles.chart}>
-          {data.map((d, i) => {
-            const height = (d.total_kalori / maxKal) * 100
-            const over = d.total_kalori > target
-            const date = new Date(d.tanggal)
-            const label = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-            return (
-              <div key={i} className={styles.barWrap}>
-                <div className={styles.barKal}>{d.total_kalori}</div>
-                <div className={styles.barOuter}>
-                  <div
-                    className={styles.barInner}
-                    style={{
-                      height: `${height}%`,
-                      background: over ? 'var(--red)' : 'var(--accent)',
-                      opacity: 0.85 + (i / data.length) * 0.15
-                    }}
-                  />
+        <div className={styles.chartTitle}>Kalori Harian ({days} Hari Terakhir)</div>
+        <div className={styles.chartWrap}>
+          <div className={styles.chart}>
+            <div
+              className={styles.targetLine}
+              style={{ bottom: `calc(${(target / maxKal) * 100}% - 1px)` }}
+            >
+              <span className={styles.targetLineLabel}>Target {target}</span>
+            </div>
+            {data.map((d, i) => {
+              const height = (d.total_kalori / maxKal) * 100
+              const over = d.total_kalori > target
+              const date = new Date(d.tanggal)
+              const dayLabel = date.toLocaleDateString('id-ID', { weekday: 'short' })
+              const dateLabel = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+              return (
+                <div key={i} className={styles.barWrap}>
+                  <div className={styles.barKal} style={{ color: over ? 'var(--red)' : 'var(--accent)' }}>
+                    {d.total_kalori > 0 ? d.total_kalori : '–'}
+                  </div>
+                  <div className={styles.barOuter}>
+                    <div
+                      className={styles.barInner}
+                      style={{
+                        height: `${Math.max(height, d.total_kalori > 0 ? 3 : 0)}%`,
+                        background: over ? 'var(--red)' : 'var(--accent)',
+                      }}
+                    />
+                  </div>
+                  <div className={styles.barLabel}>{days <= 7 ? dayLabel : dateLabel}</div>
                 </div>
-                <div className={styles.barLabel}>{label}</div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </div>
 

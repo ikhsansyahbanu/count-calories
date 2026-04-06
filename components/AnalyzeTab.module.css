@@ -412,3 +412,98 @@
   transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
 .resetBtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* Favorites */
+.favSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.favSectionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.favSectionHeader:hover { background: var(--surface2); }
+.favChevron { font-size: 0.7rem; color: var(--muted); }
+
+.favList {
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.favItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.favItem:last-child { border-bottom: none; }
+.favItem:hover { background: var(--surface2); }
+
+.favItemInfo { flex: 1; min-width: 0; }
+.favItemName { font-size: 0.84rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.favItemMeta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-weight: 500; }
+
+.favItemActions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.favRelogBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  transition: opacity 0.15s;
+}
+.favRelogBtn:hover { opacity: 0.85; }
+
+.favDeleteBtn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.75rem;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.favDeleteBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* Favorite button in result card */
+.resultHeaderTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.favBtn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1.2rem;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.favBtn:hover { background: rgba(255,255,255,0.25); }
+.favBtnSaved { background: rgba(255,220,50,0.2); border-color: rgba(255,220,50,0.5); }

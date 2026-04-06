@@ -65,8 +65,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px;
-  position: relative;
-  overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
 .chartTitle {
@@ -78,31 +76,38 @@
   letter-spacing: 0.07em;
 }
 
-.targetLine {
-  position: absolute; left: 18px; right: 18px;
-  border-top: 1.5px dashed var(--accent-border);
-  pointer-events: none; z-index: 2;
-  bottom: 52px;
-}
-.targetLineLabel {
-  position: absolute; right: 0; top: -18px;
-  font-size: 0.65rem; color: var(--accent);
-  background: var(--surface); padding: 0 4px;
-  font-weight: 600;
+.chartWrap {
+  position: relative;
 }
 
 .chart {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
-  height: 140px;
+  gap: 4px;
+  height: 150px;
   position: relative;
+  padding-bottom: 20px;
 }
-.barWrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
-.barKal { font-size: 0.6rem; color: var(--muted); white-space: nowrap; min-height: 14px; display: flex; align-items: flex-end; font-weight: 500; }
+
+.targetLine {
+  position: absolute;
+  left: 0; right: 0;
+  border-top: 1.5px dashed var(--accent-border);
+  pointer-events: none;
+  z-index: 2;
+}
+.targetLineLabel {
+  position: absolute; right: 0; top: -16px;
+  font-size: 0.65rem; color: var(--accent);
+  background: var(--surface); padding: 0 4px;
+  font-weight: 600;
+}
+
+.barWrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
+.barKal { font-size: 0.58rem; white-space: nowrap; min-height: 14px; display: flex; align-items: flex-end; font-weight: 600; }
 .barOuter { flex: 1; width: 100%; display: flex; align-items: flex-end; }
-.barInner { width: 100%; border-radius: 6px 6px 3px 3px; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); min-height: 4px; }
-.barLabel { font-size: 0.62rem; color: var(--muted); text-align: center; white-space: nowrap; font-weight: 500; }
+.barInner { width: 100%; border-radius: 5px 5px 2px 2px; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); }
+.barLabel { font-size: 0.6rem; color: var(--muted); text-align: center; white-space: nowrap; font-weight: 500; height: 20px; display: flex; align-items: center; justify-content: center; }
 
 .saranCard {
   background: var(--surface);

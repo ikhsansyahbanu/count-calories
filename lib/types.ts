@@ -48,6 +48,19 @@ export interface AnalyzeResult {
 }
 
 
+export interface FoodFavorite {
+  id: number
+  user_id: number
+  nama: string
+  porsi: string
+  total_kalori: number
+  protein_g: number
+  karbo_g: number
+  lemak_g: number
+  items: FoodItem[]
+  created_at: string
+}
+
 export interface DaySummary {
   tanggal: string
   total_kalori: number
