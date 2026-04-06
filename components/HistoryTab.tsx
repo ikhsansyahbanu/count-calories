@@ -104,7 +104,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
             </div>
           </div>
         </div>
-      }}
+      )}
 
       <div className={styles.topBar}>
         <h2 className={styles.title}>Riwayat Makan</h2>
