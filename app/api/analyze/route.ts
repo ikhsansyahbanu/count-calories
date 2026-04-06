@@ -39,7 +39,7 @@ Estimasi serealistis mungkin berdasarkan visual. Jika tidak ada makanan, isi tot
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 1000,
+        max_tokens: 4000,
         messages: [{
           role: 'user',
           content: [
