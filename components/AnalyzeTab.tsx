@@ -36,14 +36,30 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   function handleFile(file: File) {
-    setMediaType(file.type || 'image/jpeg')
+    setMediaType('image/jpeg')
     const reader = new FileReader()
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
-      setImageBase64(dataUrl.split(',')[1])
-      setImagePreview(dataUrl)
-      setResult(null)
-      setError(null)
+      // Compress foto sebelum disimpan
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 1024
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        const compressed = canvas.toDataURL('image/jpeg', 0.8)
+        setImageBase64(compressed.split(',')[1])
+        setImagePreview(compressed)
+        setResult(null)
+        setError(null)
+      }
+      img.src = dataUrl
     }
     reader.readAsDataURL(file)
   }

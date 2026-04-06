@@ -87,8 +87,18 @@ Return ONLY valid JSON, no other text, no markdown:
 
     const json = await response.json()
     const raw = json.choices?.[0]?.message?.content ?? ''
-    const clean = raw.replace(/```json|```/g, '').trim()
-    const parsed: AnalyzeResult = JSON.parse(clean)
+
+    // Strip thinking tags (Gemini 2.5 Flash kadang menambahkan <thinking>...</thinking>)
+    const withoutThinking = raw.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim()
+    // Strip markdown code blocks
+    const clean = withoutThinking.replace(/```json\s*|\s*```/g, '').trim()
+    // Extract JSON object jika ada teks lain
+    const jsonMatch = clean.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      console.error('[Parse error] No JSON found in response:', clean)
+      return NextResponse.json({ error: 'AI tidak dapat menganalisis foto ini' }, { status: 500 })
+    }
+    const parsed: AnalyzeResult = JSON.parse(jsonMatch[0])
 
     const result = await pool.query(
       `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence)
