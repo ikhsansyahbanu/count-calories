@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { User } from '@/lib/types'
 import styles from './UserModal.module.css'
 
@@ -42,8 +42,10 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const [form, setForm] = useState(emptyForm)
   const [editUser, setEditUser] = useState<User | null>(null)
+  const [confirmSwitch, setConfirmSwitch] = useState<User | null>(null)
 
   useEffect(() => { loadUsers() }, [])
 
@@ -68,28 +70,34 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
   }
 
   async function createUser() {
-    if (!form.nama.trim() || submitting) return
+    if (!form.nama.trim() || submittingRef.current) return
+    submittingRef.current = true
     setSubmitting(true)
-    const res = await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nama: form.nama.trim(),
-        berat_badan: parseFloat(form.berat_badan) || 0,
-        tinggi_badan: parseFloat(form.tinggi_badan) || 0,
-        usia: parseInt(form.usia) || 0,
-        jenis_kelamin: form.jenis_kelamin,
-        aktivitas: form.aktivitas,
-        target_kalori: parseInt(form.target_kalori) || 2000
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nama: form.nama.trim(),
+          berat_badan: parseFloat(form.berat_badan) || 0,
+          tinggi_badan: parseFloat(form.tinggi_badan) || 0,
+          usia: parseInt(form.usia) || 0,
+          jenis_kelamin: form.jenis_kelamin,
+          aktivitas: form.aktivitas,
+          target_kalori: parseInt(form.target_kalori) || 2000
+        })
       })
-    })
-    const json = await res.json()
-    if (json.success) { onSelect(json.data); onClose?.() }
-    setSubmitting(false)
+      const json = await res.json()
+      if (json.success) { onSelect(json.data); onClose?.() }
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
+    }
   }
 
   async function saveEdit() {
-    if (!editUser || !form.nama.trim() || submitting) return
+    if (!editUser || !form.nama.trim() || submittingRef.current) return
+    submittingRef.current = true
     setSubmitting(true)
     const res = await fetch('/api/users', {
       method: 'PATCH',
@@ -111,6 +119,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
       setMode('list')
       loadUsers()
     }
+    submittingRef.current = false
     setSubmitting(false)
   }
 
@@ -154,6 +163,25 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
 
   return (
     <div className={styles.overlay}>
+      {confirmSwitch && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmBox}>
+            <div className={styles.confirmIcon}>🔄</div>
+            <div className={styles.confirmTitle}>Pindah profil?</div>
+            <div className={styles.confirmFrom}>
+              <span>{currentUser?.nama}</span>
+              <span className={styles.confirmArrow}>→</span>
+              <span>{confirmSwitch.nama}</span>
+            </div>
+            <div className={styles.confirmDesc}>Riwayat dan ringkasan akan berganti ke profil {confirmSwitch.nama}.</div>
+            <div className={styles.confirmBtns}>
+              <button className={styles.confirmCancel} onClick={() => setConfirmSwitch(null)}>Batal</button>
+              <button className={styles.confirmSwitch} onClick={() => { onSelect(confirmSwitch); setConfirmSwitch(null); onClose?.() }}>Pindah</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.modal}>
         {mode === 'list' && (
           <>
@@ -181,7 +209,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
                   return (
                     <div key={u.id}
                       className={`${styles.userCard} ${currentUser?.id === u.id ? styles.userCardActive : ''}`}
-                      onClick={() => { onSelect(u); onClose?.() }}>
+                      onClick={() => { if (currentUser && currentUser.id !== u.id) setConfirmSwitch(u); else { onSelect(u); onClose?.() } }}>
                       <div className={styles.userAvatar}>{u.nama[0].toUpperCase()}</div>
                       <div className={styles.userInfo}>
                         <div className={styles.userName}>{u.nama}</div>
