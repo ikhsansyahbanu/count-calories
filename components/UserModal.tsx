@@ -41,6 +41,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
   const [users, setUsers] = useState<User[]>([])
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list')
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editUser, setEditUser] = useState<User | null>(null)
 
@@ -67,7 +68,8 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
   }
 
   async function createUser() {
-    if (!form.nama.trim()) return
+    if (!form.nama.trim() || submitting) return
+    setSubmitting(true)
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,10 +85,12 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
     })
     const json = await res.json()
     if (json.success) { onSelect(json.data); onClose?.() }
+    setSubmitting(false)
   }
 
   async function saveEdit() {
-    if (!editUser || !form.nama.trim()) return
+    if (!editUser || !form.nama.trim() || submitting) return
+    setSubmitting(true)
     const res = await fetch('/api/users', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -107,6 +111,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
       setMode('list')
       loadUsers()
     }
+    setSubmitting(false)
   }
 
   async function deleteUser(id: number) {
@@ -297,8 +302,8 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
                   onChange={e => setForm(f => ({ ...f, target_kalori: e.target.value }))} />
               </div>
 
-              <button className={styles.saveBtn} onClick={mode === 'create' ? createUser : saveEdit} disabled={!form.nama.trim()}>
-                {mode === 'create' ? 'Buat & Mulai' : 'Simpan Perubahan'}
+              <button className={styles.saveBtn} onClick={mode === 'create' ? createUser : saveEdit} disabled={!form.nama.trim() || submitting}>
+                {submitting ? 'Menyimpan...' : mode === 'create' ? 'Buat & Mulai' : 'Simpan Perubahan'}
               </button>
 
               {mode === 'edit' && editUser && (
