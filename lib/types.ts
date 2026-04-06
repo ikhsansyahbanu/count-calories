@@ -9,6 +9,7 @@ export interface FoodLog {
   items: FoodItem[]
   saran: string
   target_kalori: number
+  keterangan: string
   created_at: string
 }
 

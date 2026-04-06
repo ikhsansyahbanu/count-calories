@@ -8,6 +8,7 @@ export default function AnalyzeTab() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState('image/jpeg')
   const [target, setTarget] = useState(2000)
+  const [keterangan, setKeterangan] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<FoodLog | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +56,7 @@ export default function AnalyzeTab() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target })
+        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan })
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
@@ -108,6 +109,29 @@ export default function AnalyzeTab() {
           min={1000} max={4000}
         />
         <span className={styles.targetUnit}>kkal/hari</span>
+      </div>
+
+      <div className={styles.keteranganRow}>
+        <div className={styles.keteranganQuick}>
+          {['Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack'].map(k => (
+            <button
+              key={k}
+              className={`${styles.keteranganChip} ${keterangan === k ? styles.keteranganChipActive : ''}`}
+              onClick={() => setKeterangan(keterangan === k ? '' : k)}
+              type="button"
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          placeholder="Keterangan (opsional)"
+          value={keterangan}
+          onChange={e => setKeterangan(e.target.value)}
+          className={styles.keteranganInput}
+          maxLength={100}
+        />
       </div>
 
       <button

@@ -99,7 +99,10 @@ export default function HistoryTab() {
               return (
                 <div key={row.id} className={styles.logItem}>
                   <div className={styles.logLeft}>
-                    <div className={styles.logName}>{row.nama}</div>
+                    <div className={styles.logName}>
+                      {row.keterangan && <span className={styles.logKet}>{row.keterangan}</span>}
+                      {row.nama}
+                    </div>
                     <div className={styles.logMeta}>
                       {row.porsi} · {time}
                       {items.length > 0 && ` · ${items.length} item`}

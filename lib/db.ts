@@ -26,8 +26,12 @@ export async function initDB() {
       items JSONB DEFAULT '[]',
       saran TEXT,
       target_kalori INTEGER DEFAULT 2000,
+      keterangan VARCHAR(100) DEFAULT '',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `)
+  await pool.query(`
+    ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''
   `)
 }
 

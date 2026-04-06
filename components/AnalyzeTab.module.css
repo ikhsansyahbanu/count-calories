@@ -81,6 +81,49 @@
 .targetInput:focus { border-color: var(--accent); background: var(--accent-light); }
 .targetUnit { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
 
+.keteranganRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keteranganQuick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.keteranganChip {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  transition: all 0.15s;
+}
+.keteranganChip:hover { border-color: var(--accent); color: var(--accent); }
+.keteranganChipActive {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.keteranganInput {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.keteranganInput:focus { border-color: var(--accent); background: var(--accent-light); }
+.keteranganInput::placeholder { color: var(--muted2); }
+
 .analyzeBtn {
   width: 100%;
   background: var(--accent);
