@@ -221,3 +221,93 @@
   padding: 5px 10px;
   white-space: nowrap;
 }
+
+/* Search & Filter */
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.searchInput {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 10px 36px 10px 38px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.searchInput:focus {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.searchInput::placeholder { color: var(--muted2); }
+.searchClear {
+  position: absolute;
+  right: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.searchClear:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
+.filterRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.filterChip {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+.filterChip:hover { border-color: var(--accent); color: var(--accent); }
+.filterChipActive {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.resultCount {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 2px 4px;
+}
+
+.logManualBadge {
+  background: var(--teal-light);
+  color: var(--teal);
+  border: 1px solid rgba(14, 165, 165, 0.25);
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  white-space: nowrap;
+}

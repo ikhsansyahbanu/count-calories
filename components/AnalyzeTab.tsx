@@ -3,10 +3,25 @@ import { useState, useRef } from 'react'
 import { FoodLog, User } from '@/lib/types'
 import styles from './AnalyzeTab.module.css'
 
+type InputMode = 'foto' | 'manual'
+type PorsiOption = 'Kecil' | 'Normal' | 'Besar' | 'Ekstra'
+type MetodeMasakOption = 'Goreng' | 'Bakar' | 'Rebus' | 'Kukus' | 'Mentah'
+
 export default function AnalyzeTab({ user }: { user: User | null }) {
+  const [inputMode, setInputMode] = useState<InputMode>('foto')
+
+  // Foto mode state
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState('image/jpeg')
+
+  // Manual mode state
+  const [manualNama, setManualNama] = useState('')
+  const [manualPorsi, setManualPorsi] = useState<PorsiOption>('Normal')
+  const [manualMetode, setManualMetode] = useState<MetodeMasakOption>('Goreng')
+  const [manualSantan, setManualSantan] = useState(false)
+
+  // Shared state
   const [target, setTarget] = useState(user?.target_kalori || 2000)
   const [keterangan, setKeterangan] = useState('')
   const [loading, setLoading] = useState(false)
@@ -46,6 +61,21 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
     if (fileRef.current) fileRef.current.value = ''
   }
 
+  function resetManual() {
+    setManualNama('')
+    setManualPorsi('Normal')
+    setManualMetode('Goreng')
+    setManualSantan(false)
+    setResult(null)
+    setError(null)
+  }
+
+  function switchMode(mode: InputMode) {
+    setInputMode(mode)
+    setResult(null)
+    setError(null)
+  }
+
   async function analyze() {
     if (!imageBase64) return
     setLoading(true)
@@ -68,6 +98,36 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
     }
   }
 
+  async function estimateManual() {
+    if (!manualNama.trim()) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const res = await fetch('/api/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nama: manualNama.trim(),
+          porsi: manualPorsi,
+          metode_masak: manualMetode,
+          santan: manualSantan,
+          target_kalori: target,
+          keterangan,
+          user_id: user?.id
+        })
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error)
+      setResult(json.data)
+    } catch {
+      setError('Gagal mengestimasi kalori. Coba lagi.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const pct = result ? Math.round((result.total_kalori / target) * 100) : 0
   const items = result?.items
     ? (typeof result.items === 'string' ? JSON.parse(result.items) : result.items)
@@ -75,30 +135,125 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
 
   return (
     <div className={styles.wrap}>
-      {!imagePreview ? (
-        <div
-          className={styles.uploadArea}
-          onDrop={onDrop}
-          onDragOver={e => e.preventDefault()}
-          onClick={() => fileRef.current?.click()}
+      {/* Mode toggle */}
+      <div className={styles.modeToggle}>
+        <button
+          className={`${styles.modeBtn} ${inputMode === 'foto' ? styles.modeBtnActive : ''}`}
+          onClick={() => switchMode('foto')}
+          type="button"
         >
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} hidden />
-          <div className={styles.uploadIcon}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
+          <span className={styles.modeBtnIcon}>📷</span>
+          Foto
+        </button>
+        <button
+          className={`${styles.modeBtn} ${inputMode === 'manual' ? styles.modeBtnActive : ''}`}
+          onClick={() => switchMode('manual')}
+          type="button"
+        >
+          <span className={styles.modeBtnIcon}>✏️</span>
+          Manual
+        </button>
+      </div>
+
+      {/* FOTO MODE */}
+      {inputMode === 'foto' && (
+        <>
+          {!imagePreview ? (
+            <div
+              className={styles.uploadArea}
+              onDrop={onDrop}
+              onDragOver={e => e.preventDefault()}
+              onClick={() => fileRef.current?.click()}
+            >
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} hidden />
+              <div className={styles.uploadIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+              <div className={styles.uploadTitle}>Foto atau upload makanan</div>
+              <div className={styles.uploadSub}>JPG, PNG, HEIC · tap untuk kamera</div>
+            </div>
+          ) : (
+            <div className={styles.previewWrap}>
+              <img src={imagePreview} alt="preview" className={styles.previewImg} />
+              <button className={styles.removeBtn} onClick={resetPhoto}>✕</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* MANUAL MODE */}
+      {inputMode === 'manual' && (
+        <div className={styles.manualForm}>
+          <div className={styles.manualField}>
+            <label className={styles.manualLabel}>Nama Makanan</label>
+            <input
+              type="text"
+              placeholder="contoh: Nasi goreng, Ayam bakar, Gado-gado..."
+              value={manualNama}
+              onChange={e => setManualNama(e.target.value)}
+              className={styles.manualInput}
+              maxLength={100}
+            />
           </div>
-          <div className={styles.uploadTitle}>Foto atau upload makanan</div>
-          <div className={styles.uploadSub}>JPG, PNG, HEIC · tap untuk kamera</div>
-        </div>
-      ) : (
-        <div className={styles.previewWrap}>
-          <img src={imagePreview} alt="preview" className={styles.previewImg} />
-          <button className={styles.removeBtn} onClick={resetPhoto}>✕</button>
+
+          <div className={styles.manualField}>
+            <label className={styles.manualLabel}>Ukuran Porsi</label>
+            <div className={styles.chipGroup}>
+              {(['Kecil', 'Normal', 'Besar', 'Ekstra'] as PorsiOption[]).map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`${styles.chip} ${manualPorsi === p ? styles.chipActive : ''}`}
+                  onClick={() => setManualPorsi(p)}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.manualField}>
+            <label className={styles.manualLabel}>Metode Masak</label>
+            <div className={styles.chipGroup}>
+              {(['Goreng', 'Bakar', 'Rebus', 'Kukus', 'Mentah'] as MetodeMasakOption[]).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`${styles.chip} ${manualMetode === m ? styles.chipActive : ''}`}
+                  onClick={() => setManualMetode(m)}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.manualField}>
+            <label className={styles.manualLabel}>Pakai Santan?</label>
+            <div className={styles.toggleGroup}>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${!manualSantan ? styles.toggleBtnActive : ''}`}
+                onClick={() => setManualSantan(false)}
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${manualSantan ? styles.toggleBtnActive : ''}`}
+                onClick={() => setManualSantan(true)}
+              >
+                Ya
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Shared: Target & Keterangan */}
       <div className={styles.targetRow}>
         <span className={styles.targetLabel}>Target harian</span>
         <input
@@ -134,20 +289,32 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
         />
       </div>
 
-      <button
-        className={styles.analyzeBtn}
-        disabled={!imageBase64 || loading}
-        onClick={analyze}
-      >
-        {loading ? 'Menganalisis...' : 'Analisis Kalori'}
-      </button>
+      {inputMode === 'foto' ? (
+        <button
+          className={styles.analyzeBtn}
+          disabled={!imageBase64 || loading}
+          onClick={analyze}
+        >
+          {loading ? 'Menganalisis...' : 'Analisis Kalori'}
+        </button>
+      ) : (
+        <button
+          className={styles.analyzeBtn}
+          disabled={!manualNama.trim() || loading}
+          onClick={estimateManual}
+        >
+          {loading ? 'Mengestimasi...' : 'Estimasi Kalori'}
+        </button>
+      )}
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
       {loading && (
         <div className={styles.loadingBox}>
           <div className={styles.spinner} />
-          <p className={styles.loadingText}>AI sedang menganalisis makananmu...</p>
+          <p className={styles.loadingText}>
+            {inputMode === 'foto' ? 'AI sedang menganalisis makananmu...' : 'AI sedang mengestimasi kalori...'}
+          </p>
         </div>
       )}
 
@@ -214,7 +381,12 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
             <div>{result.saran}</div>
           </div>
 
-          <button className={styles.resetBtn} onClick={resetPhoto}>Analisis foto lain</button>
+          <button
+            className={styles.resetBtn}
+            onClick={inputMode === 'foto' ? resetPhoto : resetManual}
+          >
+            {inputMode === 'foto' ? 'Analisis foto lain' : 'Estimasi makanan lain'}
+          </button>
         </div>
       )}
     </div>

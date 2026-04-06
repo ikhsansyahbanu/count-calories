@@ -1,5 +1,116 @@
 .wrap { display: flex; flex-direction: column; gap: 14px; }
 
+/* Mode toggle */
+.modeToggle {
+  display: flex;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+.modeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 9px 12px;
+  transition: all 0.2s;
+}
+.modeBtn:hover { color: var(--text); background: var(--surface); }
+.modeBtnActive {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--accent-border);
+}
+.modeBtnIcon { font-size: 1rem; }
+
+/* Manual form */
+.manualForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.manualField { display: flex; flex-direction: column; gap: 7px; }
+.manualLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.manualInput {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.manualInput:focus { border-color: var(--accent); background: var(--accent-light); }
+.manualInput::placeholder { color: var(--muted2); }
+
+.chipGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chipActive {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toggleGroup {
+  display: flex;
+  gap: 6px;
+}
+.toggleBtn {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  transition: all 0.15s;
+}
+.toggleBtn:hover { border-color: var(--accent); color: var(--accent); }
+.toggleBtnActive {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .uploadArea {
   border: 2px dashed var(--accent-border);
   border-radius: var(--radius);

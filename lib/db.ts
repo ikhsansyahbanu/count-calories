@@ -51,6 +51,7 @@ export async function initDB() {
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''`)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS confidence VARCHAR(10) DEFAULT 'medium'`)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`)
+  await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS manual BOOLEAN DEFAULT FALSE`)
 }
 
 export default pool

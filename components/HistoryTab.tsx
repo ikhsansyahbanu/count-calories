@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { FoodLog, User } from '@/lib/types'
 import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
@@ -11,8 +11,10 @@ interface DayGroup {
   target: number
 }
 
+type FilterOption = 'Semua' | 'Makan Pagi' | 'Makan Siang' | 'Makan Malam' | 'Snack' | 'Manual'
+
 export default function HistoryTab({ user }: { user: User | null }) {
-  const [groups, setGroups] = useState<DayGroup[]>([])
+  const [allLogs, setAllLogs] = useState<FoodLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -20,6 +22,10 @@ export default function HistoryTab({ user }: { user: User | null }) {
   const [selectedLog, setSelectedLog] = useState<FoodLog | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [confirmDeleteNama, setConfirmDeleteNama] = useState('')
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState<FilterOption>('Semua')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -29,16 +35,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
       const res = await fetch(`/api/history?limit=200${userParam}`)
       const json = await res.json()
       if (!json.success) throw new Error()
-
-      const map: Record<string, DayGroup> = {}
-      json.data.forEach((row: FoodLog) => {
-        const d = new Date(row.created_at)
-        const key = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-        if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
-        map[key].rows.push(row)
-        map[key].total += row.total_kalori
-      })
-      setGroups(Object.values(map))
+      setAllLogs(json.data)
     } catch {
       setError('Gagal memuat riwayat makan')
     } finally {
@@ -70,6 +67,43 @@ export default function HistoryTab({ user }: { user: User | null }) {
     load()
   }
 
+  // Filter & search logic (client-side)
+  const filteredLogs = useMemo(() => {
+    let logs = allLogs
+
+    // Filter by category
+    if (activeFilter !== 'Semua') {
+      if (activeFilter === 'Manual') {
+        logs = logs.filter(row => row.manual === true)
+      } else {
+        logs = logs.filter(row => row.keterangan === activeFilter)
+      }
+    }
+
+    // Search by nama
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      logs = logs.filter(row => row.nama.toLowerCase().includes(q))
+    }
+
+    return logs
+  }, [allLogs, activeFilter, searchQuery])
+
+  // Group filtered logs by day
+  const groups = useMemo(() => {
+    const map: Record<string, DayGroup> = {}
+    filteredLogs.forEach((row: FoodLog) => {
+      const d = new Date(row.created_at)
+      const key = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
+      map[key].rows.push(row)
+      map[key].total += row.total_kalori
+    })
+    return Object.values(map)
+  }, [filteredLogs])
+
+  const isFiltering = searchQuery.trim() !== '' || activeFilter !== 'Semua'
+
   if (loading) return (
     <div className={styles.loadingWrap}>
       <div className={styles.spinner} />
@@ -79,13 +113,15 @@ export default function HistoryTab({ user }: { user: User | null }) {
 
   if (error) return <div className={styles.errorBox}>{error}</div>
 
-  if (groups.length === 0) return (
+  if (allLogs.length === 0) return (
     <div className={styles.emptyState}>
       <div className={styles.emptyIcon}>🍽️</div>
       <p>Belum ada riwayat makan</p>
       <span>Analisis foto makanan pertamamu!</span>
     </div>
   )
+
+  const filterOptions: FilterOption[] = ['Semua', 'Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack', 'Manual']
 
   return (
     <div className={styles.wrap}>
@@ -110,6 +146,53 @@ export default function HistoryTab({ user }: { user: User | null }) {
         <h2 className={styles.title}>Riwayat Makan</h2>
         <button className={styles.refreshBtn} onClick={load}>Refresh</button>
       </div>
+
+      {/* Search bar */}
+      <div className={styles.searchWrap}>
+        <span className={styles.searchIcon}>🔍</span>
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Cari nama makanan..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button className={styles.searchClear} onClick={() => setSearchQuery('')}>✕</button>
+        )}
+      </div>
+
+      {/* Filter chips */}
+      <div className={styles.filterRow}>
+        {filterOptions.map(f => (
+          <button
+            key={f}
+            type="button"
+            className={`${styles.filterChip} ${activeFilter === f ? styles.filterChipActive : ''}`}
+            onClick={() => setActiveFilter(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* Result count when filtering */}
+      {isFiltering && (
+        <div className={styles.resultCount}>
+          {filteredLogs.length === 0
+            ? 'Tidak ada hasil'
+            : `${filteredLogs.length} hasil ditemukan`}
+        </div>
+      )}
+
+      {/* Empty search state */}
+      {isFiltering && groups.length === 0 && (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>🔍</div>
+          <p>Tidak ada hasil untuk pencarian ini</p>
+          <span>Coba kata kunci lain atau ubah filter</span>
+        </div>
+      )}
 
       {groups.map(group => {
         const pct = Math.round((group.total / group.target) * 100)
@@ -155,6 +238,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
                     ) : (
                       <div className={styles.logName}>
                         {row.keterangan && <span className={styles.logKet}>{row.keterangan}</span>}
+                        {row.manual && <span className={styles.logManualBadge}>Manual</span>}
                         {row.nama}
                         <button className={styles.editBtn} onClick={() => startEdit(row)} title="Edit nama">✏️</button>
                       </div>
