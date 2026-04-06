@@ -301,6 +301,28 @@
   padding: 2px 4px;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+.pageBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 9px 16px;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.pageBtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.pageBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pageInfo { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
 .logManualBadge {
   background: var(--teal-light);
   color: var(--teal);

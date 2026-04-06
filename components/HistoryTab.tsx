@@ -26,6 +26,8 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterOption>('Semua')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -45,10 +47,10 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
 
   useEffect(() => { load() }, [load, refreshKey])
 
-  // Bug Fix 3: reset filter when user changes
   useEffect(() => {
     setSearchQuery('')
     setActiveFilter('Semua')
+    setPage(1)
   }, [user?.id])
 
   async function deleteLog(id: number) {
@@ -95,10 +97,17 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
     return logs
   }, [allLogs, activeFilter, searchQuery])
 
-  // Group filtered logs by day
+  // Reset page when filter/search changes
+  useEffect(() => { setPage(1) }, [searchQuery, activeFilter])
+
+  // Paginate filtered logs
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE)
+  const pagedLogs = useMemo(() => filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredLogs, page, PAGE_SIZE])
+
+  // Group paginated logs by day
   const groups = useMemo(() => {
     const map: Record<string, DayGroup> = {}
-    filteredLogs.forEach((row: FoodLog) => {
+    pagedLogs.forEach((row: FoodLog) => {
       const d = new Date(row.created_at)
       const key = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
       if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
@@ -106,7 +115,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
       map[key].total += row.total_kalori
     })
     return Object.values(map)
-  }, [filteredLogs])
+  }, [pagedLogs])
 
   const isFiltering = searchQuery.trim() !== '' || activeFilter !== 'Semua'
 
@@ -182,21 +191,18 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
         ))}
       </div>
 
-      {/* Result count when filtering */}
-      {isFiltering && (
-        <div className={styles.resultCount}>
-          {filteredLogs.length === 0
-            ? 'Tidak ada hasil'
-            : `${filteredLogs.length} hasil ditemukan`}
-        </div>
-      )}
-
       {/* Empty search state */}
       {isFiltering && groups.length === 0 && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>🔍</div>
           <p>Tidak ada hasil untuk pencarian ini</p>
           <span>Coba kata kunci lain atau ubah filter</span>
+        </div>
+      )}
+
+      {isFiltering && (
+        <div className={styles.resultCount}>
+          {filteredLogs.length === 0 ? 'Tidak ada hasil' : `${filteredLogs.length} hasil`}
         </div>
       )}
 
@@ -270,6 +276,23 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
           </div>
         )
       })}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+          <button
+            className={styles.pageBtn}
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+          >← Sebelumnya</button>
+          <span className={styles.pageInfo}>{page} / {totalPages}</span>
+          <button
+            className={styles.pageBtn}
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+          >Berikutnya →</button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,21 +1,35 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AnalyzeTab from '@/components/AnalyzeTab'
 import HistoryTab from '@/components/HistoryTab'
 import SummaryTab from '@/components/SummaryTab'
+import WeightTab from '@/components/WeightTab'
 import UserModal from '@/components/UserModal'
 import DailyProgress from '@/components/DailyProgress'
 import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
 
-type Tab = 'analyze' | 'history' | 'summary'
+type Tab = 'analyze' | 'history' | 'weight' | 'summary'
 
 function AppContent() {
   const { user, setUser } = useUser()
   const [tab, setTab] = useState<Tab>('analyze')
   const [showUserModal, setShowUserModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark') { setDarkMode(true); document.documentElement.setAttribute('data-theme', 'dark') }
+  }, [])
+
+  function toggleDark() {
+    const next = !darkMode
+    setDarkMode(next)
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : '')
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
 
   function handleSelectUser(u: User | null) {
     setUser(u)
@@ -46,6 +60,9 @@ function AppContent() {
           <div className={styles.logo}>Kalori<span>.AI</span></div>
         </div>
         <p className={styles.tagline}>foto makanan → kalori instan</p>
+        <button className={styles.themeToggle} onClick={toggleDark} title="Toggle dark mode">
+          {darkMode ? '☀️' : '🌙'}
+        </button>
 
         {user && (
           <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
@@ -66,13 +83,13 @@ function AppContent() {
       <DailyProgress user={user} refreshKey={refreshKey} />
 
       <div className={styles.tabs}>
-        {(['analyze', 'history', 'summary'] as Tab[]).map(t => (
+        {(['analyze', 'history', 'weight', 'summary'] as Tab[]).map(t => (
           <button
             key={t}
             className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'analyze' ? 'Analisis' : t === 'history' ? 'Riwayat' : 'Ringkasan'}
+            {t === 'analyze' ? 'Analisis' : t === 'history' ? 'Riwayat' : t === 'weight' ? 'Berat' : 'Ringkasan'}
           </button>
         ))}
       </div>
@@ -80,6 +97,7 @@ function AppContent() {
       <div className={styles.content}>
         {tab === 'analyze' && <AnalyzeTab user={user} onAnalyzed={handleAnalyzed} />}
         {tab === 'history' && <HistoryTab user={user} refreshKey={refreshKey} />}
+        {tab === 'weight' && <WeightTab user={user} />}
         {tab === 'summary' && <SummaryTab user={user} />}
       </div>
     </main>
