@@ -22,6 +22,7 @@ export interface FoodLog {
   saran: string
   target_kalori: number
   keterangan: string
+  confidence: 'low' | 'medium' | 'high'
   created_at: string
 }
 
