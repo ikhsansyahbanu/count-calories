@@ -4,7 +4,7 @@ import { User } from '@/lib/types'
 import styles from './UserModal.module.css'
 
 interface Props {
-  onSelect: (user: User) => void
+  onSelect: (user: User | null) => void
   currentUser: User | null
   onClose?: () => void
 }
@@ -111,7 +111,10 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
 
   async function deleteUser(id: number) {
     await fetch(`/api/users?id=${id}`, { method: 'DELETE' })
-    loadUsers()
+    setMode('list')
+    setEditUser(null)
+    await loadUsers()
+    if (currentUser?.id === id) onSelect(null as unknown as User)
   }
 
   function openEdit(u: User) {

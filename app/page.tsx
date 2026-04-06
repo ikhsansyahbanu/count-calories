@@ -15,9 +15,9 @@ function AppContent() {
   const [tab, setTab] = useState<Tab>('analyze')
   const [showUserModal, setShowUserModal] = useState(false)
 
-  function handleSelectUser(u: User) {
+  function handleSelectUser(u: User | null) {
     setUser(u)
-    setShowUserModal(false)
+    if (u) setShowUserModal(false)
   }
 
   const bmi = user?.berat_badan && user?.tinggi_badan
