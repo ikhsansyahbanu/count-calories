@@ -4,8 +4,11 @@ import { FoodLog, User } from '@/lib/types'
 import styles from './AnalyzeTab.module.css'
 
 type InputMode = 'foto' | 'manual'
+type KategoriOption = 'Makanan' | 'Minuman'
 type PorsiOption = 'Kecil' | 'Normal' | 'Besar' | 'Ekstra'
 type MetodeMasakOption = 'Goreng' | 'Bakar' | 'Rebus' | 'Kukus' | 'Mentah'
+type MinumanManisOption = 'Tidak Manis' | 'Sedikit Manis' | 'Manis' | 'Sangat Manis'
+type MinumanSuhuOption = 'Dingin' | 'Hangat' | 'Panas'
 
 export default function AnalyzeTab({ user }: { user: User | null }) {
   const [inputMode, setInputMode] = useState<InputMode>('foto')
@@ -16,10 +19,13 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
   const [mediaType, setMediaType] = useState('image/jpeg')
 
   // Manual mode state
+  const [manualKategori, setManualKategori] = useState<KategoriOption>('Makanan')
   const [manualNama, setManualNama] = useState('')
   const [manualPorsi, setManualPorsi] = useState<PorsiOption>('Normal')
   const [manualMetode, setManualMetode] = useState<MetodeMasakOption>('Goreng')
   const [manualSantan, setManualSantan] = useState(false)
+  const [manualManis, setManualManis] = useState<MinumanManisOption>('Manis')
+  const [manualSuhu, setManualSuhu] = useState<MinumanSuhuOption>('Dingin')
 
   // Shared state
   const [target, setTarget] = useState(user?.target_kalori || 2000)
@@ -63,9 +69,12 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
 
   function resetManual() {
     setManualNama('')
+    setManualKategori('Makanan')
     setManualPorsi('Normal')
     setManualMetode('Goreng')
     setManualSantan(false)
+    setManualManis('Manis')
+    setManualSuhu('Dingin')
     setResult(null)
     setError(null)
   }
@@ -110,9 +119,12 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nama: manualNama.trim(),
+          kategori: manualKategori,
           porsi: manualPorsi,
           metode_masak: manualMetode,
           santan: manualSantan,
+          manis: manualManis,
+          suhu: manualSuhu,
           target_kalori: target,
           keterangan,
           user_id: user?.id
@@ -187,11 +199,27 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
       {/* MANUAL MODE */}
       {inputMode === 'manual' && (
         <div className={styles.manualForm}>
+
+          {/* Kategori toggle */}
           <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Nama Makanan</label>
+            <label className={styles.manualLabel}>Kategori</label>
+            <div className={styles.toggleGroup}>
+              {(['Makanan', 'Minuman'] as KategoriOption[]).map(k => (
+                <button key={k} type="button"
+                  className={`${styles.toggleBtn} ${manualKategori === k ? styles.toggleBtnActive : ''}`}
+                  onClick={() => setManualKategori(k)}>
+                  {k === 'Makanan' ? '🍽️ Makanan' : '🥤 Minuman'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Nama */}
+          <div className={styles.manualField}>
+            <label className={styles.manualLabel}>{manualKategori === 'Makanan' ? 'Nama Makanan' : 'Nama Minuman'}</label>
             <input
               type="text"
-              placeholder="contoh: Nasi goreng, Ayam bakar, Gado-gado..."
+              placeholder={manualKategori === 'Makanan' ? 'contoh: Nasi goreng, Ayam bakar...' : 'contoh: Es teh manis, Kopi susu...'}
               value={manualNama}
               onChange={e => setManualNama(e.target.value)}
               className={styles.manualInput}
@@ -199,57 +227,80 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
             />
           </div>
 
+          {/* Ukuran porsi */}
           <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Ukuran Porsi</label>
+            <label className={styles.manualLabel}>Ukuran {manualKategori === 'Makanan' ? 'Porsi' : 'Minuman'}</label>
             <div className={styles.chipGroup}>
               {(['Kecil', 'Normal', 'Besar', 'Ekstra'] as PorsiOption[]).map(p => (
-                <button
-                  key={p}
-                  type="button"
+                <button key={p} type="button"
                   className={`${styles.chip} ${manualPorsi === p ? styles.chipActive : ''}`}
-                  onClick={() => setManualPorsi(p)}
-                >
+                  onClick={() => setManualPorsi(p)}>
                   {p}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Metode Masak</label>
-            <div className={styles.chipGroup}>
-              {(['Goreng', 'Bakar', 'Rebus', 'Kukus', 'Mentah'] as MetodeMasakOption[]).map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  className={`${styles.chip} ${manualMetode === m ? styles.chipActive : ''}`}
-                  onClick={() => setManualMetode(m)}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Makanan-only fields */}
+          {manualKategori === 'Makanan' && (
+            <>
+              <div className={styles.manualField}>
+                <label className={styles.manualLabel}>Metode Masak</label>
+                <div className={styles.chipGroup}>
+                  {(['Goreng', 'Bakar', 'Rebus', 'Kukus', 'Mentah'] as MetodeMasakOption[]).map(m => (
+                    <button key={m} type="button"
+                      className={`${styles.chip} ${manualMetode === m ? styles.chipActive : ''}`}
+                      onClick={() => setManualMetode(m)}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Pakai Santan?</label>
-            <div className={styles.toggleGroup}>
-              <button
-                type="button"
-                className={`${styles.toggleBtn} ${!manualSantan ? styles.toggleBtnActive : ''}`}
-                onClick={() => setManualSantan(false)}
-              >
-                Tidak
-              </button>
-              <button
-                type="button"
-                className={`${styles.toggleBtn} ${manualSantan ? styles.toggleBtnActive : ''}`}
-                onClick={() => setManualSantan(true)}
-              >
-                Ya
-              </button>
-            </div>
-          </div>
+              <div className={styles.manualField}>
+                <label className={styles.manualLabel}>Pakai Santan?</label>
+                <div className={styles.toggleGroup}>
+                  <button type="button"
+                    className={`${styles.toggleBtn} ${!manualSantan ? styles.toggleBtnActive : ''}`}
+                    onClick={() => setManualSantan(false)}>Tidak</button>
+                  <button type="button"
+                    className={`${styles.toggleBtn} ${manualSantan ? styles.toggleBtnActive : ''}`}
+                    onClick={() => setManualSantan(true)}>Ya</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Minuman-only fields */}
+          {manualKategori === 'Minuman' && (
+            <>
+              <div className={styles.manualField}>
+                <label className={styles.manualLabel}>Tingkat Kemanisan</label>
+                <div className={styles.chipGroup}>
+                  {(['Tidak Manis', 'Sedikit Manis', 'Manis', 'Sangat Manis'] as MinumanManisOption[]).map(m => (
+                    <button key={m} type="button"
+                      className={`${styles.chip} ${manualManis === m ? styles.chipActive : ''}`}
+                      onClick={() => setManualManis(m)}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.manualField}>
+                <label className={styles.manualLabel}>Suhu</label>
+                <div className={styles.toggleGroup}>
+                  {(['Dingin', 'Hangat', 'Panas'] as MinumanSuhuOption[]).map(s => (
+                    <button key={s} type="button"
+                      className={`${styles.toggleBtn} ${manualSuhu === s ? styles.toggleBtnActive : ''}`}
+                      onClick={() => setManualSuhu(s)}>
+                      {s === 'Dingin' ? '🧊 Dingin' : s === 'Hangat' ? '☕ Hangat' : '🔥 Panas'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
