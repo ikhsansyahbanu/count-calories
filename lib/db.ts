@@ -44,10 +44,12 @@ export async function initDB() {
       saran TEXT,
       target_kalori INTEGER DEFAULT 2000,
       keterangan VARCHAR(100) DEFAULT '',
+      confidence VARCHAR(10) DEFAULT 'medium',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''`)
+  await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS confidence VARCHAR(10) DEFAULT 'medium'`)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`)
 }
 

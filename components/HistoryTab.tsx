@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { FoodLog, User } from '@/lib/types'
+import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
 
 interface DayGroup {
@@ -16,6 +17,9 @@ export default function HistoryTab({ user }: { user: User | null }) {
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [selectedLog, setSelectedLog] = useState<FoodLog | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [confirmDeleteNama, setConfirmDeleteNama] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -46,6 +50,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
 
   async function deleteLog(id: number) {
     await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
+    setConfirmDeleteId(null)
     load()
   }
 
@@ -84,6 +89,23 @@ export default function HistoryTab({ user }: { user: User | null }) {
 
   return (
     <div className={styles.wrap}>
+      {selectedLog && <LogDetail log={selectedLog} onClose={() => setSelectedLog(null)} />}
+
+      {confirmDeleteId && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmBox}>
+            <div className={styles.confirmIcon}>🗑️</div>
+            <div className={styles.confirmTitle}>Hapus item ini?</div>
+            <div className={styles.confirmNama}>{confirmDeleteNama}</div>
+            <div className={styles.confirmDesc}>Data yang dihapus tidak bisa dikembalikan.</div>
+            <div className={styles.confirmBtns}>
+              <button className={styles.confirmCancel} onClick={() => setConfirmDeleteId(null)}>Batal</button>
+              <button className={styles.confirmDelete} onClick={() => deleteLog(confirmDeleteId)}>Hapus</button>
+            </div>
+          </div>
+        </div>
+      }}
+
       <div className={styles.topBar}>
         <h2 className={styles.title}>Riwayat Makan</h2>
         <button className={styles.refreshBtn} onClick={load}>Refresh</button>
@@ -116,7 +138,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
               const items = typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || [])
               const time = new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
               return (
-                <div key={row.id} className={styles.logItem}>
+                <div key={row.id} className={styles.logItem} onClick={() => editingId !== row.id && setSelectedLog(row)}>
                   <div className={styles.logLeft}>
                     {editingId === row.id ? (
                       <div className={styles.editRow}>
@@ -150,7 +172,7 @@ export default function HistoryTab({ user }: { user: User | null }) {
                   <div className={styles.logRight}>
                     <div className={styles.logKal}>{row.total_kalori}</div>
                     <div className={styles.logKalUnit}>kkal</div>
-                    <button className={styles.deleteBtn} onClick={() => deleteLog(row.id)}>✕</button>
+                    <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); setConfirmDeleteId(row.id); setConfirmDeleteNama(row.nama) }}>✕</button>
                   </div>
                 </div>
               )

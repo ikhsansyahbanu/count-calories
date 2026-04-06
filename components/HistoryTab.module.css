@@ -79,7 +79,7 @@
   border-top: 1px solid var(--border);
   transition: background 0.15s;
 }
-.logItem:hover { background: var(--surface2); }
+.logItem:hover { background: var(--surface2); cursor: pointer; }
 .logLeft { flex: 1; }
 .logName { font-size: 0.88rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .logKet {
@@ -108,6 +108,68 @@
   transition: color 0.2s, background 0.2s;
 }
 .deleteBtn:hover { color: var(--red); background: var(--red-light); }
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 40, 20, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirmBox {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  animation: fadeUp 0.25s ease;
+}
+
+.confirmIcon { font-size: 2rem; margin-bottom: 10px; }
+.confirmTitle { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.confirmNama { font-size: 0.85rem; font-weight: 600; color: var(--accent); margin-bottom: 6px; background: var(--accent-light); border-radius: 8px; padding: 6px 12px; }
+.confirmDesc { font-size: 0.78rem; color: var(--muted); margin-bottom: 18px; }
+
+.confirmBtns { display: flex; gap: 8px; }
+.confirmCancel {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 11px;
+  transition: background 0.2s;
+}
+.confirmCancel:hover { background: var(--surface3); }
+
+.confirmDelete {
+  flex: 1;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 11px;
+  transition: opacity 0.2s;
+}
+.confirmDelete:hover { opacity: 0.88; }
 
 .editBtn {
   background: none;

@@ -13,23 +13,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tidak ada foto yang dikirim' }, { status: 400 })
     }
 
-    const prompt = `Kamu adalah ahli gizi. Analisis foto makanan ini dan berikan estimasi kalori.
+    const prompt = `You are a professional nutritionist and food image analyst specialized in Indonesian cuisine.
 
-Balas HANYA dengan JSON valid tanpa teks lain, format:
+Reference calories for common Indonesian food:
+- Nasi putih 1 centong (100g): 175 kcal
+- Nasi goreng 1 porsi: 550 kcal
+- Nasi uduk 1 porsi: 400 kcal
+- Ayam goreng 1 potong paha: 250 kcal
+- Ayam bakar 1 potong: 180 kcal
+- Tempe goreng 1 potong: 100 kcal
+- Tahu goreng 1 potong: 80 kcal
+- Mie goreng 1 porsi: 480 kcal
+- Rendang 1 porsi (80g): 195 kcal
+- Gado-gado 1 porsi: 300 kcal
+- Soto ayam 1 mangkok: 250 kcal
+- Bakso 1 mangkok: 300 kcal
+- Ketoprak 1 porsi: 350 kcal
+- Pecel lele 1 porsi: 450 kcal
+- Nasi padang 1 porsi: 700 kcal
+
+Instructions:
+- Identify ALL visible food and drink items in the image
+- Estimate portion size per item in grams realistically based on plate/bowl size
+- Consider cooking methods: fried adds 30-50% more calories, coconut milk adds 100-200 kcal, grilled is closer to raw weight
+- Include hidden calories: cooking oil, sugar, sauces, coconut milk, condiments
+- If food is Indonesian, prioritize local knowledge and reference data above
+- Sum of items calories must be close to total_kalori
+- If no food is visible, set total_kalori to 0
+- For saran: give specific personalized advice based on the actual food eaten and the user's daily target of ${target_kalori} kcal
+
+Return ONLY valid JSON, no other text, no markdown:
 {
-  "nama": "nama hidangan utama",
-  "porsi": "estimasi porsi (misal: 1 piring, 250g)",
+  "nama": "nama hidangan utama dalam Bahasa Indonesia",
+  "porsi": "estimasi total porsi (misal: 1 piring 350g)",
   "total_kalori": angka,
   "protein_g": angka,
   "karbo_g": angka,
   "lemak_g": angka,
+  "confidence": "low | medium | high",
   "items": [
-    {"nama": "item makanan", "kalori": angka}
+    {"nama": "nama item dalam Bahasa Indonesia", "kalori": angka, "gram": angka}
   ],
-  "saran": "saran singkat 1-2 kalimat untuk program turun berat badan dengan target ${target_kalori} kkal/hari"
-}
-
-Estimasi serealistis mungkin berdasarkan visual. Jika tidak ada makanan, isi total_kalori: 0.`
+  "saran": "saran personal 1-2 kalimat dalam Bahasa Indonesia berdasarkan makanan yang dikonsumsi dan target ${target_kalori} kkal/hari"
+}`
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -65,12 +91,13 @@ Estimasi serealistis mungkin berdasarkan visual. Jika tidak ada makanan, isi tot
     const parsed: AnalyzeResult = JSON.parse(clean)
 
     const result = await pool.query(
-      `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [
         user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
         parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
-        JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan
+        JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
+        parsed.confidence || 'medium'
       ]
     )
 

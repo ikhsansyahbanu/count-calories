@@ -37,9 +37,11 @@ export interface AnalyzeResult {
   protein_g: number
   karbo_g: number
   lemak_g: number
+  confidence: 'low' | 'medium' | 'high'
   items: FoodItem[]
   saran: string
 }
+
 
 export interface DaySummary {
   tanggal: string

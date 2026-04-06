@@ -156,6 +156,11 @@ export default function AnalyzeTab({ user }: { user: User | null }) {
           <div className={styles.resultHeader}>
             <div className={styles.resultName}>{result.nama}</div>
             <div className={styles.resultPortion}>{result.porsi}</div>
+            {result.confidence && (
+              <div className={`${styles.confidenceBadge} ${styles[`confidence_${result.confidence}`]}`}>
+                {result.confidence === 'high' ? '✅ Akurasi Tinggi' : result.confidence === 'medium' ? '⚠️ Akurasi Sedang' : '❓ Akurasi Rendah'}
+              </div>
+            )}
           </div>
 
           <div className={styles.kalBig}>

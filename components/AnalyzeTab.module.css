@@ -188,6 +188,18 @@
 .resultName { font-size: 1.1rem; font-weight: 700; color: #fff; }
 .resultPortion { font-size: 0.78rem; color: rgba(255,255,255,0.75); margin-top: 3px; }
 
+.confidenceBadge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.confidence_high { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+.confidence_medium { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(212,147,10,0.25); }
+.confidence_low { background: var(--red-light); color: var(--red); border: 1px solid rgba(224,82,82,0.25); }
+
 .kalBig { text-align: center; padding: 1.75rem 1rem 1rem; }
 .kalNumber { font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1; }
 .kalLabel { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 5px; font-weight: 600; }
