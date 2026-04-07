@@ -80,7 +80,12 @@
 
 .chartWrap {
   position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* sembunyikan scrollbar tapi tetap bisa scroll */
+  scrollbar-width: none;
 }
+.chartWrap::-webkit-scrollbar { display: none; }
 
 .chart {
   display: flex;
@@ -89,6 +94,8 @@
   height: 150px;
   position: relative;
   padding-bottom: 20px;
+  /* pastikan chart melebar jika bar terlalu banyak */
+  min-width: 100%;
 }
 
 .targetLine {
@@ -105,11 +112,11 @@
   font-weight: 600;
 }
 
-.barWrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
-.barKal { font-size: 0.58rem; white-space: nowrap; min-height: 14px; display: flex; align-items: flex-end; font-weight: 600; }
+.barWrap { flex: 1; min-width: 22px; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
+.barKal { font-size: 0.58rem; white-space: nowrap; min-height: 14px; display: flex; align-items: flex-end; font-weight: 600; overflow: hidden; max-width: 100%; }
 .barOuter { flex: 1; width: 100%; display: flex; align-items: flex-end; }
 .barInner { width: 100%; border-radius: 5px 5px 2px 2px; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); }
-.barLabel { font-size: 0.6rem; color: var(--muted); text-align: center; white-space: nowrap; font-weight: 500; height: 20px; display: flex; align-items: center; justify-content: center; }
+.barLabel { font-size: 0.6rem; color: var(--muted); text-align: center; white-space: nowrap; font-weight: 500; height: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; max-width: 100%; }
 
 .saranCard {
   background: var(--surface);

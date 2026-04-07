@@ -128,7 +128,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
               return (
                 <div key={i} className={styles.barWrap}>
                   <div className={styles.barKal} style={{ color: over ? 'var(--red)' : 'var(--accent)' }}>
-                    {d.total_kalori > 0 ? d.total_kalori : '–'}
+                    {days <= 14 && (d.total_kalori > 0 ? d.total_kalori : '–')}
                   </div>
                   <div className={styles.barOuter}>
                     <div
@@ -199,7 +199,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
                     return (
                       <div key={i} className={styles.barWrap}>
                         <div className={styles.barKal} style={{ color: over ? 'var(--red)' : cfg.color }}>
-                          {val > 0 ? `${val}g` : '–'}
+                          {days <= 14 && (val > 0 ? `${val}g` : '–')}
                         </div>
                         <div className={styles.barOuter}>
                           <div
