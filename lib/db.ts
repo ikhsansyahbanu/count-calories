@@ -1,4 +1,4 @@
-import { Pool } from 'pg'
+import { Pool, PoolClient } from 'pg'
 
 const connectionString = process.env.DATABASE_URL
   ?.replace('sslmode=require', 'sslmode=verify-full')
@@ -6,7 +6,7 @@ const connectionString = process.env.DATABASE_URL
 
 const pool = new Pool(
   connectionString
-    ? { connectionString, ssl: true }
+    ? { connectionString, ssl: true, max: 10, idleTimeoutMillis: 30_000, connectionTimeoutMillis: 5_000 }
     : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
@@ -14,6 +14,9 @@ const pool = new Pool(
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD,
         ssl: process.env.DB_SSL === 'true' ? true : false,
+        max: 10,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 5_000,
       }
 )
 
@@ -106,9 +109,10 @@ export function initDB(): Promise<void> {
   return _initPromise
 }
 
-export async function updateStreak(userId: number) {
+export async function updateStreak(userId: number, client?: PoolClient) {
+  const db = client ?? pool
   try {
-    const userRes = await pool.query(
+    const userRes = await db.query(
       `SELECT
         last_log_date,
         streak,
@@ -125,7 +129,7 @@ export async function updateStreak(userId: number) {
     const { last_log_date, streak, today, diff_days } = userRes.rows[0]
 
     if (!last_log_date) {
-      await pool.query(
+      await db.query(
         `UPDATE users SET streak = 1, last_log_date = $1 WHERE id = $2`,
         [today, userId]
       )
@@ -137,18 +141,34 @@ export async function updateStreak(userId: number) {
     if (diffDays === 0) {
       return
     } else if (diffDays === 1) {
-      await pool.query(
+      await db.query(
         `UPDATE users SET streak = $1, last_log_date = $2 WHERE id = $3`,
         [streak + 1, today, userId]
       )
     } else {
-      await pool.query(
+      await db.query(
         `UPDATE users SET streak = 1, last_log_date = $1 WHERE id = $2`,
         [today, userId]
       )
     }
   } catch (err) {
     console.error('[updateStreak]', err)
+  }
+}
+
+/** Jalankan fn dalam satu database transaction. Rollback otomatis jika fn throw. */
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const result = await fn(client)
+    await client.query('COMMIT')
+    return result
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
   }
 }
 

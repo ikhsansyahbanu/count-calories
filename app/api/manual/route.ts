@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool, { initDB, updateStreak } from '@/lib/db'
+import { initDB, updateStreak, withTransaction } from '@/lib/db'
 import { AnalyzeResult } from '@/lib/types'
 import { rateLimit, getIP } from '@/lib/rateLimit'
 
@@ -19,7 +19,19 @@ export async function POST(req: NextRequest) {
     await initDB()
 
     const body = await req.json()
-    const { nama, kategori = 'Makanan', porsi, metode_masak, santan, manis, suhu, target_kalori = 2000, keterangan = '', user_id } = body
+    const {
+      kategori = 'Makanan',
+      porsi,
+      metode_masak,
+      santan,
+      manis,
+      suhu,
+      user_id,
+    } = body
+
+    const nama = String(body.nama ?? '').trim().slice(0, 200)
+    const keterangan = String(body.keterangan ?? '').trim().slice(0, 100)
+    const target_kalori = Math.max(500, Math.min(10000, parseInt(body.target_kalori) || 2000))
 
     if (!nama) {
       return NextResponse.json({ error: 'Nama tidak boleh kosong' }, { status: 400 })
@@ -164,20 +176,31 @@ Kembalikan HANYA JSON valid, tanpa teks lain, tanpa markdown:
       return NextResponse.json({ error: 'AI mengembalikan data yang tidak valid' }, { status: 500 })
     }
 
-    const result = await pool.query(
-      `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
-      [
-        user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
-        parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
-        JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
-        parsed.confidence || 'medium', true
-      ]
-    )
+    // Sanity check: macro calories should roughly match total (protein=4, karbo=4, lemak=9 kcal/g)
+    const macroKcal = (parsed.protein_g ?? 0) * 4 + (parsed.karbo_g ?? 0) * 4 + (parsed.lemak_g ?? 0) * 9
+    if (parsed.total_kalori > 0 && macroKcal > 0) {
+      const ratio = macroKcal / parsed.total_kalori
+      if (ratio < 0.4 || ratio > 2.5) {
+        console.warn('[Macro mismatch manual]', { total_kalori: parsed.total_kalori, macroKcal, ratio })
+      }
+    }
 
-    if (user_id) await updateStreak(user_id)
+    const savedLog = await withTransaction(async (client) => {
+      const r = await client.query(
+        `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [
+          user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
+          parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
+          JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
+          parsed.confidence || 'medium', true
+        ]
+      )
+      if (user_id) await updateStreak(user_id, client)
+      return r.rows[0]
+    })
 
-    return NextResponse.json({ success: true, data: result.rows[0] })
+    return NextResponse.json({ success: true, data: savedLog })
 
   } catch (err) {
     console.error('[/api/manual]', err)

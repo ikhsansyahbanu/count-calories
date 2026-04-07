@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
     await initDB()
 
     const { searchParams } = new URL(req.url)
-    const user_id = searchParams.get('user_id')
+    const rawUserId = searchParams.get('user_id')
+    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id diperlukan' }, { status: 400 })

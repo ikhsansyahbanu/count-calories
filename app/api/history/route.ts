@@ -8,11 +8,12 @@ export async function GET(req: NextRequest) {
     await initDB()
     const { searchParams } = new URL(req.url)
 
-    const user_id = searchParams.get('user_id')
+    const rawUserId = searchParams.get('user_id')
+    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')))
     const offset = (page - 1) * limit
-    const search = searchParams.get('search')?.trim() || ''
+    const search = (searchParams.get('search')?.trim() || '').slice(0, 100)
     const keterangan = searchParams.get('keterangan')?.trim() || ''
     const date = searchParams.get('date')
 
@@ -69,8 +70,10 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     await initDB()
-    const { id, nama } = await req.json()
-    if (!id || !nama) return NextResponse.json({ error: 'ID dan nama wajib diisi' }, { status: 400 })
+    const body = await req.json()
+    const id = parseInt(body.id)
+    const nama = String(body.nama ?? '').trim().slice(0, 255)
+    if (!id || isNaN(id) || !nama) return NextResponse.json({ error: 'ID dan nama wajib diisi' }, { status: 400 })
 
     await pool.query('UPDATE food_logs SET nama = $1 WHERE id = $2', [nama, id])
     return NextResponse.json({ success: true })
@@ -84,7 +87,8 @@ export async function DELETE(req: NextRequest) {
   try {
     await initDB()
     const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const rawId = searchParams.get('id')
+    const id = rawId && /^\d+$/.test(rawId) ? parseInt(rawId) : null
     if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })
 
     await pool.query('DELETE FROM food_logs WHERE id = $1', [id])

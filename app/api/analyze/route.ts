@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool, { initDB, updateStreak } from '@/lib/db'
+import { initDB, updateStreak, withTransaction } from '@/lib/db'
 import { AnalyzeResult } from '@/lib/types'
 import { rateLimit, getIP } from '@/lib/rateLimit'
 
@@ -19,10 +19,22 @@ export async function POST(req: NextRequest) {
     await initDB()
 
     const body = await req.json()
-    const { image_base64, media_type = 'image/jpeg', target_kalori = 2000, keterangan = '', user_id } = body
+    const {
+      image_base64,
+      media_type = 'image/jpeg',
+      user_id,
+    } = body
+
+    const target_kalori = Math.max(500, Math.min(10000, parseInt(body.target_kalori) || 2000))
+    const keterangan = String(body.keterangan ?? '').trim().slice(0, 100)
 
     if (!image_base64) {
       return NextResponse.json({ error: 'Tidak ada foto yang dikirim' }, { status: 400 })
+    }
+
+    const validMediaTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!validMediaTypes.includes(media_type)) {
+      return NextResponse.json({ error: 'Format gambar tidak didukung' }, { status: 400 })
     }
 
     const prompt = `You are a professional nutritionist and food image analyst specialized in Indonesian cuisine.
@@ -124,20 +136,31 @@ Return ONLY valid JSON, no other text, no markdown:
       return NextResponse.json({ error: 'Foto tidak mengandung makanan atau minuman. Coba foto yang lain.' }, { status: 422 })
     }
 
-    const result = await pool.query(
-      `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-      [
-        user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
-        parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
-        JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
-        parsed.confidence || 'medium'
-      ]
-    )
+    // Sanity check: macro calories should roughly match total (protein=4, karbo=4, lemak=9 kcal/g)
+    const macroKcal = (parsed.protein_g ?? 0) * 4 + (parsed.karbo_g ?? 0) * 4 + (parsed.lemak_g ?? 0) * 9
+    if (parsed.total_kalori > 0 && macroKcal > 0) {
+      const ratio = macroKcal / parsed.total_kalori
+      if (ratio < 0.4 || ratio > 2.5) {
+        console.warn('[Macro mismatch analyze]', { total_kalori: parsed.total_kalori, macroKcal, ratio })
+      }
+    }
 
-    if (user_id) await updateStreak(user_id)
+    const savedLog = await withTransaction(async (client) => {
+      const r = await client.query(
+        `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        [
+          user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
+          parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
+          JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
+          parsed.confidence || 'medium'
+        ]
+      )
+      if (user_id) await updateStreak(user_id, client)
+      return r.rows[0]
+    })
 
-    return NextResponse.json({ success: true, data: result.rows[0] })
+    return NextResponse.json({ success: true, data: savedLog })
 
   } catch (err) {
     console.error('[/api/analyze]', err)

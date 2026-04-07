@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     await initDB()
-    const user_id = req.nextUrl.searchParams.get('user_id')
+    const rawUserId = req.nextUrl.searchParams.get('user_id')
+    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
     if (!user_id) return NextResponse.json({ success: true, data: [] })
 
     const result = await pool.query(
@@ -24,9 +25,11 @@ export async function POST(req: NextRequest) {
   try {
     await initDB()
     const body = await req.json()
-    const { user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items } = body
+    const user_id = parseInt(body.user_id)
+    const nama = String(body.nama ?? '').trim().slice(0, 255)
+    const { porsi, total_kalori, protein_g, karbo_g, lemak_g, items } = body
 
-    if (!user_id || !nama) {
+    if (!user_id || isNaN(user_id) || !nama) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
     }
 
@@ -54,7 +57,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await initDB()
-    const id = req.nextUrl.searchParams.get('id')
+    const rawId = req.nextUrl.searchParams.get('id')
+    const id = rawId && /^\d+$/.test(rawId) ? parseInt(rawId) : null
     if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 })
 
     await pool.query(`DELETE FROM food_favorites WHERE id = $1`, [id])
