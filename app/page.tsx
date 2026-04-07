@@ -6,6 +6,7 @@ import SummaryTab from '@/components/SummaryTab'
 import WeightTab from '@/components/WeightTab'
 import UserModal from '@/components/UserModal'
 import DailyProgress from '@/components/DailyProgress'
+import AuthGate from '@/components/AuthGate'
 import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
@@ -106,8 +107,10 @@ function AppContent() {
 
 export default function Home() {
   return (
-    <UserProvider>
-      <AppContent />
-    </UserProvider>
+    <AuthGate>
+      <UserProvider>
+        <AppContent />
+      </UserProvider>
+    </AuthGate>
   )
 }
