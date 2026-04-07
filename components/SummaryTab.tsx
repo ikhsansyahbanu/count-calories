@@ -3,10 +3,19 @@ import { useState, useEffect, useCallback } from 'react'
 import { DaySummary, User } from '@/lib/types'
 import styles from './SummaryTab.module.css'
 
+type MacroTab = 'protein' | 'karbo' | 'lemak'
+
+const MACRO_CONFIG = {
+  protein: { label: 'Protein', color: 'var(--teal)', unit: 'g', pct: 0.25, kcalPerG: 4 },
+  karbo:   { label: 'Karbo',   color: 'var(--amber)', unit: 'g', pct: 0.50, kcalPerG: 4 },
+  lemak:   { label: 'Lemak',   color: 'var(--red)',   unit: 'g', pct: 0.25, kcalPerG: 9 },
+}
+
 export default function SummaryTab({ user }: { user: User | null }) {
   const [data, setData] = useState<DaySummary[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(7)
+  const [macroTab, setMacroTab] = useState<MacroTab>('protein')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -136,6 +145,81 @@ export default function SummaryTab({ user }: { user: User | null }) {
             })}
           </div>
         </div>
+      </div>
+
+      {/* Macro trend chart */}
+      <div className={styles.chartCard}>
+        <div className={styles.macroChartHeader}>
+          <div className={styles.chartTitle} style={{ marginBottom: 0 }}>Tren Makronutrien</div>
+          <div className={styles.macroTabGroup}>
+            {(Object.keys(MACRO_CONFIG) as MacroTab[]).map(tab => (
+              <button
+                key={tab}
+                className={`${styles.macroTabBtn} ${macroTab === tab ? styles.macroTabBtnActive : ''}`}
+                style={macroTab === tab ? { background: MACRO_CONFIG[tab].color, borderColor: MACRO_CONFIG[tab].color } : {}}
+                onClick={() => setMacroTab(tab)}
+              >
+                {MACRO_CONFIG[tab].label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {(() => {
+          const cfg = MACRO_CONFIG[macroTab]
+          const key = macroTab === 'protein' ? 'total_protein' : macroTab === 'karbo' ? 'total_karbo' : 'total_lemak'
+          const values = data.map(d => Number(d[key as keyof DaySummary]) || 0)
+          const macroTarget = Math.round((target * cfg.pct) / cfg.kcalPerG)
+          const maxVal = Math.max(...values, macroTarget)
+          const avg = Math.round(values.reduce((s, v) => s + v, 0) / (values.length || 1))
+
+          return (
+            <>
+              <div className={styles.macroChartMeta}>
+                <span>Rata-rata: <strong style={{ color: cfg.color }}>{avg}g</strong></span>
+                <span className={styles.macroChartTarget}>Target ~{macroTarget}g/hari</span>
+              </div>
+              <div className={styles.chartWrap}>
+                <div className={styles.chart}>
+                  <div
+                    className={styles.targetLine}
+                    style={{ bottom: `calc(${(macroTarget / maxVal) * 100}% - 1px)` }}
+                  >
+                    <span className={styles.targetLineLabel} style={{ color: cfg.color }}>
+                      {macroTarget}g
+                    </span>
+                  </div>
+                  {data.map((d, i) => {
+                    const val = Number(d[key as keyof DaySummary]) || 0
+                    const height = maxVal > 0 ? (val / maxVal) * 100 : 0
+                    const over = val > macroTarget
+                    const date = new Date(d.tanggal)
+                    const dayLabel = date.toLocaleDateString('id-ID', { weekday: 'short' })
+                    const dateLabel = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+                    return (
+                      <div key={i} className={styles.barWrap}>
+                        <div className={styles.barKal} style={{ color: over ? 'var(--red)' : cfg.color }}>
+                          {val > 0 ? `${val}g` : '–'}
+                        </div>
+                        <div className={styles.barOuter}>
+                          <div
+                            className={styles.barInner}
+                            style={{
+                              height: `${Math.max(height, val > 0 ? 3 : 0)}%`,
+                              background: over ? 'var(--red)' : cfg.color,
+                              opacity: over ? 1 : 0.85,
+                            }}
+                          />
+                        </div>
+                        <div className={styles.barLabel}>{days <= 7 ? dayLabel : dateLabel}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )
+        })()}
       </div>
 
       {/* Saran */}
