@@ -13,7 +13,7 @@ export function useAuth() {
 }
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking')
+  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated' | 'error'>('checking')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,7 +22,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     fetch('/api/auth')
       .then(r => r.json())
       .then(data => setStatus(data.authenticated ? 'authenticated' : 'unauthenticated'))
-      .catch(() => setStatus('unauthenticated'))
+      .catch(() => setStatus('error'))
   }, [])
 
   async function handleLogin(e: React.FormEvent) {
@@ -58,6 +58,21 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <div className={styles.overlay}>
         <div className={styles.spinner} />
+      </div>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.card}>
+          <div className={styles.icon}>⚠️</div>
+          <h1 className={styles.title}>Gagal terhubung</h1>
+          <p className={styles.subtitle}>Tidak dapat terhubung ke server. Periksa koneksi internet kamu.</p>
+          <button className={styles.btn} onClick={() => { setStatus('checking'); fetch('/api/auth').then(r => r.json()).then(data => setStatus(data.authenticated ? 'authenticated' : 'unauthenticated')).catch(() => setStatus('error')) }}>
+            Coba Lagi
+          </button>
+        </div>
       </div>
     )
   }

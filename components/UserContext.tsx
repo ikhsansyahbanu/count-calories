@@ -14,7 +14,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('kalori_user')
-    if (saved) setUserState(JSON.parse(saved))
+    if (saved) {
+      try {
+        setUserState(JSON.parse(saved))
+      } catch {
+        localStorage.removeItem('kalori_user')
+      }
+    }
   }, [])
 
   function setUser(u: User | null) {

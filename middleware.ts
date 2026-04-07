@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifySessionToken } from '@/lib/session'
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   // Bypass: login/logout endpoint tidak perlu auth
   if (req.nextUrl.pathname.startsWith('/api/auth')) {
     return NextResponse.next()
@@ -14,7 +15,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.json({ error: 'Server belum dikonfigurasi' }, { status: 500 })
   }
 
-  if (!session || session !== secret) {
+  if (!session || !(await verifySessionToken(session, secret))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

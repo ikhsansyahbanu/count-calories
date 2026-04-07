@@ -17,6 +17,7 @@ export default function WeightTab({ user }: { user: User | null }) {
   const [berat, setBerat] = useState('')
   const [catatan, setCatatan] = useState('')
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
@@ -55,9 +56,14 @@ export default function WeightTab({ user }: { user: User | null }) {
   }
 
   async function deleteLog(id: number) {
-    await fetch(`/api/weight?id=${id}`, { method: 'DELETE' })
-    setLogs(prev => prev.filter(l => l.id !== id))
+    const prev = logs
+    setLogs(l => l.filter(x => x.id !== id))
     setDeleteId(null)
+    const res = await fetch(`/api/weight?id=${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      setLogs(prev)
+      setError('Gagal menghapus data. Coba lagi.')
+    }
   }
 
   if (!user) return (
@@ -85,6 +91,7 @@ export default function WeightTab({ user }: { user: User | null }) {
 
   return (
     <div className={styles.wrap}>
+      {error && <div className={styles.errorBox} onClick={() => setError(null)}>{error}</div>}
       {/* Input form */}
       <div className={styles.inputCard}>
         <div className={styles.inputTitle}>Catat Berat Badan</div>
@@ -207,9 +214,9 @@ export default function WeightTab({ user }: { user: User | null }) {
               <div key={log.id} className={styles.logItem}>
                 <div className={styles.logLeft}>
                   <div className={styles.logDate}>
-                    {date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    {date.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                     &nbsp;·&nbsp;
-                    {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    {date.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })}
                   </div>
                   {log.catatan && <div className={styles.logCatatan}>{log.catatan}</div>}
                 </div>

@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   try {
     await initDB()
     const { searchParams } = new URL(req.url)
-    const days = parseInt(searchParams.get('days') || '7')
+    const daysRaw = parseInt(searchParams.get('days') || '7')
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 365) : 7
     const user_id = searchParams.get('user_id')
 
     const params: (string | number)[] = [days]

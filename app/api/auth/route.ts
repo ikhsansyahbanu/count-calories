@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getIP } from '@/lib/rateLimit'
+import { generateSessionToken, verifySessionToken } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,15 +13,14 @@ const COOKIE_OPTIONS = {
   sameSite: 'strict' as const,
   path: '/',
   maxAge: SESSION_MAX_AGE,
-  // Aktifkan jika deploy dengan HTTPS:
-  // secure: true,
+  secure: process.env.NODE_ENV === 'production',
 }
 
 // GET /api/auth — cek status session
 export async function GET(req: NextRequest) {
   const session = req.cookies.get(COOKIE_NAME)?.value
   const secret = process.env.APP_SECRET
-  const valid = !!secret && session === secret
+  const valid = !!secret && !!session && await verifySessionToken(session, secret)
   return NextResponse.json({ authenticated: valid })
 }
 
@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password salah' }, { status: 401 })
   }
 
+  const token = await generateSessionToken(secret)
   const res = NextResponse.json({ success: true })
-  res.cookies.set(COOKIE_NAME, secret, COOKIE_OPTIONS)
+  res.cookies.set(COOKIE_NAME, token, COOKIE_OPTIONS)
   return res
 }
 

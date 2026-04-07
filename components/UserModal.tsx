@@ -99,28 +99,31 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
     if (!editUser || !form.nama.trim() || submittingRef.current) return
     submittingRef.current = true
     setSubmitting(true)
-    const res = await fetch('/api/users', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: editUser.id,
-        nama: form.nama.trim(),
-        berat_badan: parseFloat(form.berat_badan) || 0,
-        tinggi_badan: parseFloat(form.tinggi_badan) || 0,
-        usia: parseInt(form.usia) || 0,
-        jenis_kelamin: form.jenis_kelamin,
-        aktivitas: form.aktivitas,
-        target_kalori: parseInt(form.target_kalori) || 2000
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editUser.id,
+          nama: form.nama.trim(),
+          berat_badan: parseFloat(form.berat_badan) || 0,
+          tinggi_badan: parseFloat(form.tinggi_badan) || 0,
+          usia: parseInt(form.usia) || 0,
+          jenis_kelamin: form.jenis_kelamin,
+          aktivitas: form.aktivitas,
+          target_kalori: parseInt(form.target_kalori) || 2000
+        })
       })
-    })
-    const json = await res.json()
-    if (json.success) {
-      if (currentUser?.id === editUser.id) onSelect(json.data)
-      setMode('list')
-      loadUsers()
+      const json = await res.json()
+      if (json.success) {
+        if (currentUser?.id === editUser.id) onSelect(json.data)
+        setMode('list')
+        loadUsers()
+      }
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
     }
-    submittingRef.current = false
-    setSubmitting(false)
   }
 
   async function deleteUser(id: number) {
@@ -128,7 +131,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
     setMode('list')
     setEditUser(null)
     await loadUsers()
-    if (currentUser?.id === id) onSelect(null as unknown as User)
+    if (currentUser?.id === id) onSelect(null)
   }
 
   function openEdit(u: User) {
@@ -210,7 +213,7 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
                     <div key={u.id}
                       className={`${styles.userCard} ${currentUser?.id === u.id ? styles.userCardActive : ''}`}
                       onClick={() => { if (currentUser && currentUser.id !== u.id) setConfirmSwitch(u); else { onSelect(u); onClose?.() } }}>
-                      <div className={styles.userAvatar}>{u.nama[0].toUpperCase()}</div>
+                      <div className={styles.userAvatar}>{u.nama[0]?.toUpperCase() ?? '?'}</div>
                       <div className={styles.userInfo}>
                         <div className={styles.userName}>{u.nama}</div>
                         <div className={styles.userMeta}>

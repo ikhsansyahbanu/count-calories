@@ -21,7 +21,9 @@ export default function ResultCard({
 }: Props) {
   const pct = Math.round((result.total_kalori / target) * 100)
   const items: { nama: string; kalori: number }[] = result.items
-    ? (typeof result.items === 'string' ? JSON.parse(result.items) : result.items)
+    ? (typeof result.items === 'string'
+        ? (() => { try { return JSON.parse(result.items as string) } catch { return [] } })()
+        : result.items)
     : []
 
   return (

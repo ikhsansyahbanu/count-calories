@@ -8,8 +8,11 @@ interface Props {
 }
 
 export default function LogDetail({ log, onClose }: Props) {
-  const items = typeof log.items === 'string' ? JSON.parse(log.items) : (log.items || [])
+  const items = typeof log.items === 'string'
+    ? (() => { try { return JSON.parse(log.items as string) } catch { return [] } })()
+    : (log.items || [])
   const time = new Date(log.created_at).toLocaleString('id-ID', {
+    timeZone: 'Asia/Jakarta',
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   })

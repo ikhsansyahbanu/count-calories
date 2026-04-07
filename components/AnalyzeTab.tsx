@@ -48,7 +48,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
 
   useEffect(() => {
     if (user?.target_kalori) setTarget(user.target_kalori)
-  }, [user?.target_kalori])
+  }, [user])
 
   useEffect(() => {
     loadFavorites()
@@ -144,6 +144,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   function handleFile(file: File) {
     setMediaType('image/jpeg')
     const reader = new FileReader()
+    reader.onerror = () => {
+      setError('Gagal membaca file. Coba foto yang lain.')
+    }
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
       const img = new Image()

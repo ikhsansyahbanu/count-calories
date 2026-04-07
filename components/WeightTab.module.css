@@ -1,5 +1,15 @@
 .wrap { display: flex; flex-direction: column; gap: 14px; }
 
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 .inputCard {
   background: var(--surface);
   border: 1px solid var(--border);

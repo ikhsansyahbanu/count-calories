@@ -84,8 +84,11 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
   useEffect(() => { load() }, [load, refreshKey])
 
   async function deleteLog(id: number) {
-    await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
     setConfirmDeleteId(null)
+    if (!res.ok) {
+      setError('Gagal menghapus log. Coba lagi.')
+    }
     load()
   }
 
@@ -96,20 +99,24 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
 
   async function saveEdit(id: number) {
     if (!editValue.trim()) return
-    await fetch('/api/history', {
+    const res = await fetch('/api/history', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, nama: editValue.trim() }),
     })
     setEditingId(null)
+    if (!res.ok) {
+      setError('Gagal menyimpan perubahan. Coba lagi.')
+    }
     load()
   }
 
-  // Group logs yang sudah di-fetch by day
+  // Group logs yang sudah di-fetch by day (pakai timezone Asia/Jakarta agar konsisten dengan server)
   const groups = useMemo<DayGroup[]>(() => {
     const map: Record<string, DayGroup> = {}
     logs.forEach(row => {
       const key = new Date(row.created_at).toLocaleDateString('id-ID', {
+        timeZone: 'Asia/Jakarta',
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
       if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
@@ -227,8 +234,10 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
             </div>
 
             {group.rows.map(row => {
-              const items = typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || [])
-              const time = new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              const items = typeof row.items === 'string'
+                ? (() => { try { return JSON.parse(row.items as string) } catch { return [] } })()
+                : (row.items || [])
+              const time = new Date(row.created_at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={row.id} className={styles.logItem} onClick={() => editingId !== row.id && setSelectedLog(row)}>
                   <div className={styles.logLeft}>

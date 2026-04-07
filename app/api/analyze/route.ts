@@ -112,7 +112,13 @@ Return ONLY valid JSON, no other text, no markdown:
       console.error('[Parse error] No JSON found in response:', clean)
       return NextResponse.json({ error: 'AI tidak dapat menganalisis foto ini' }, { status: 500 })
     }
-    const parsed: AnalyzeResult = JSON.parse(jsonMatch[0])
+    let parsed: AnalyzeResult
+    try {
+      parsed = JSON.parse(jsonMatch[0])
+    } catch {
+      console.error('[Parse error] Invalid JSON from AI:', jsonMatch[0])
+      return NextResponse.json({ error: 'AI mengembalikan data yang tidak valid' }, { status: 500 })
+    }
 
     if (parsed.is_food === false) {
       return NextResponse.json({ error: 'Foto tidak mengandung makanan atau minuman. Coba foto yang lain.' }, { status: 422 })

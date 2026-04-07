@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    await initDB()
     const { id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = await req.json()
     if (!id) return NextResponse.json({ error: 'ID wajib diisi' }, { status: 400 })
 
@@ -51,6 +52,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    await initDB()
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })

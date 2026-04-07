@@ -73,7 +73,7 @@ function AppContent() {
 
         {user && (
           <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
-            <div className={styles.userPillAvatar}>{user.nama[0].toUpperCase()}</div>
+            <div className={styles.userPillAvatar}>{user.nama[0]?.toUpperCase() ?? '?'}</div>
             <div className={styles.userPillInfo}>
               <span className={styles.userPillName}>{user.nama}</span>
               <span className={styles.userPillMeta}>

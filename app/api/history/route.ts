@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     }
     if (date) {
       params.push(date)
-      conditions.push(`DATE(created_at) = $${params.length}`)
+      conditions.push(`DATE(created_at AT TIME ZONE 'Asia/Jakarta') = $${params.length}`)
     }
     if (search) {
       params.push(`%${search}%`)
@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    await initDB()
     const { id, nama } = await req.json()
     if (!id || !nama) return NextResponse.json({ error: 'ID dan nama wajib diisi' }, { status: 400 })
 
@@ -81,6 +82,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    await initDB()
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })

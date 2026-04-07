@@ -59,7 +59,6 @@ async function _runMigrations() {
   `)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS keterangan VARCHAR(100) DEFAULT ''`)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS confidence VARCHAR(10) DEFAULT 'medium'`)
-  await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`)
   await pool.query(`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS manual BOOLEAN DEFAULT FALSE`)
 
   await pool.query(`
@@ -110,17 +109,20 @@ export function initDB(): Promise<void> {
 export async function updateStreak(userId: number) {
   try {
     const userRes = await pool.query(
-      `SELECT last_log_date, streak FROM users WHERE id = $1`,
+      `SELECT
+        last_log_date,
+        streak,
+        (CURRENT_DATE AT TIME ZONE 'Asia/Jakarta')::date AS today,
+        CASE
+          WHEN last_log_date IS NULL THEN NULL
+          ELSE ((CURRENT_DATE AT TIME ZONE 'Asia/Jakarta')::date - last_log_date::date)
+        END AS diff_days
+       FROM users WHERE id = $1`,
       [userId]
     )
     if (userRes.rows.length === 0) return
 
-    const { last_log_date, streak } = userRes.rows[0]
-
-    const todayRes = await pool.query(
-      `SELECT CURRENT_DATE AT TIME ZONE 'Asia/Jakarta' AS today`
-    )
-    const today = todayRes.rows[0].today
+    const { last_log_date, streak, today, diff_days } = userRes.rows[0]
 
     if (!last_log_date) {
       await pool.query(
@@ -130,11 +132,7 @@ export async function updateStreak(userId: number) {
       return
     }
 
-    const lastDate = new Date(last_log_date)
-    const todayDate = new Date(today)
-    const diffDays = Math.round(
-      (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const diffDays: number = diff_days
 
     if (diffDays === 0) {
       return
