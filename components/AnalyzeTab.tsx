@@ -1,24 +1,25 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { FoodLog, FoodFavorite, User } from '@/lib/types'
+import FotoMode from './analyze/FotoMode'
+import ManualMode, {
+  KategoriOption, PorsiOption, MetodeMasakOption, MinumanManisOption, MinumanSuhuOption,
+} from './analyze/ManualMode'
+import FavoritesPanel from './analyze/FavoritesPanel'
+import ResultCard from './analyze/ResultCard'
 import styles from './AnalyzeTab.module.css'
 
 type InputMode = 'foto' | 'manual'
-type KategoriOption = 'Makanan' | 'Minuman'
-type PorsiOption = 'Kecil' | 'Normal' | 'Besar' | 'Ekstra'
-type MetodeMasakOption = 'Goreng' | 'Bakar' | 'Rebus' | 'Kukus' | 'Mentah'
-type MinumanManisOption = 'Tidak Manis' | 'Sedikit Manis' | 'Manis' | 'Sangat Manis'
-type MinumanSuhuOption = 'Dingin' | 'Hangat' | 'Panas'
 
 export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; onAnalyzed?: () => void }) {
   const [inputMode, setInputMode] = useState<InputMode>('foto')
 
-  // Foto mode state
+  // Foto state
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState('image/jpeg')
 
-  // Manual mode state
+  // Manual state
   const [manualKategori, setManualKategori] = useState<KategoriOption>('Makanan')
   const [manualNama, setManualNama] = useState('')
   const [manualPorsi, setManualPorsi] = useState<PorsiOption>('Normal')
@@ -33,8 +34,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<FoodLog | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const galleryRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
 
   // Favorites state
@@ -60,9 +59,14 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     if (!user?.id) return
     try {
       const res = await fetch(`/api/favorites?user_id=${user.id}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) setFavorites(json.data)
-    } catch { /* silent */ }
+      else setError('Gagal memuat favorit.')
+    } catch (err) {
+      console.error('[loadFavorites]', err)
+      setError('Gagal memuat daftar favorit.')
+    }
   }
 
   async function saveFavorite() {
@@ -80,25 +84,39 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           protein_g: result.protein_g,
           karbo_g: result.karbo_g,
           lemak_g: result.lemak_g,
-          items: result.items
-        })
+          items: result.items,
+        }),
       })
       const json = await res.json()
       if (json.success) {
         setSavedFavId(json.data.id)
-        if (!json.duplicate) {
-          setFavorites(prev => [json.data, ...prev])
-        }
+        if (!json.duplicate) setFavorites(prev => [json.data, ...prev])
+      } else {
+        setError(json.error || 'Gagal menyimpan favorit.')
       }
+    } catch (err) {
+      console.error('[saveFavorite]', err)
+      setError('Gagal menyimpan favorit.')
     } finally {
       setSavingFav(false)
     }
   }
 
   async function deleteFavorite(id: number) {
-    fetch(`/api/favorites?id=${id}`, { method: 'DELETE' })
     if (savedFavId === id) setSavedFavId(null)
     setFavorites(prev => prev.filter(f => f.id !== id))
+    try {
+      const res = await fetch(`/api/favorites?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        // Rollback optimistic update
+        await loadFavorites()
+        setError('Gagal menghapus favorit.')
+      }
+    } catch (err) {
+      console.error('[deleteFavorite]', err)
+      await loadFavorites()
+      setError('Gagal menghapus favorit.')
+    }
   }
 
   async function relogFavorite(fav: FoodFavorite) {
@@ -110,14 +128,14 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const res = await fetch('/api/favorites/relog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ favorite_id: fav.id, user_id: user?.id, keterangan, target_kalori: target })
+        body: JSON.stringify({ favorite_id: fav.id, user_id: user?.id, keterangan, target_kalori: target }),
       })
       const json = await res.json()
-      if (!json.success) throw new Error(json.error)
+      if (!json.success) throw new Error(json.error || 'Gagal log ulang favorit.')
       setResult(json.data)
       onAnalyzed?.()
-    } catch {
-      setError('Gagal log ulang favorit.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal log ulang favorit.')
     } finally {
       setLoading(false)
     }
@@ -128,7 +146,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     const reader = new FileReader()
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
-      // Compress foto sebelum disimpan
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
@@ -139,7 +156,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         canvas.width = width
         canvas.height = height
         canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-        // Compress sampai di bawah 1MB
         let quality = 0.7
         let compressed = canvas.toDataURL('image/jpeg', quality)
         while (compressed.length > 1_300_000 && quality > 0.3) {
@@ -172,8 +188,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     setImagePreview(null)
     setResult(null)
     setError(null)
-    if (fileRef.current) fileRef.current.value = ''
-    if (galleryRef.current) galleryRef.current.value = ''
   }
 
   function resetManual() {
@@ -199,18 +213,17 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     setLoading(true)
     setError(null)
     setResult(null)
-
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan, user_id: user?.id })
+        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan, user_id: user?.id }),
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal menganalisis foto.')
       setResult(json.data)
       onAnalyzed?.()
-    } catch (err: unknown) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menganalisis foto. Coba lagi dengan foto yang lebih jelas.')
     } finally {
       setLoading(false)
@@ -222,7 +235,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     setLoading(true)
     setError(null)
     setResult(null)
-
     try {
       const res = await fetch('/api/manual', {
         method: 'POST',
@@ -237,24 +249,19 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           suhu: manualSuhu,
           target_kalori: target,
           keterangan,
-          user_id: user?.id
-        })
+          user_id: user?.id,
+        }),
       })
       const json = await res.json()
-      if (!json.success) throw new Error(json.error)
+      if (!json.success) throw new Error(json.error || 'Gagal mengestimasi kalori.')
       setResult(json.data)
       onAnalyzed?.()
-    } catch {
-      setError('Gagal mengestimasi kalori. Coba lagi.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal mengestimasi kalori. Coba lagi.')
     } finally {
       setLoading(false)
     }
   }
-
-  const pct = result ? Math.round((result.total_kalori / target) * 100) : 0
-  const items = result?.items
-    ? (typeof result.items === 'string' ? JSON.parse(result.items) : result.items)
-    : []
 
   return (
     <div className={styles.wrap}>
@@ -265,193 +272,48 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           onClick={() => switchMode('foto')}
           type="button"
         >
-          <span className={styles.modeBtnIcon}>📷</span>
-          Foto
+          <span className={styles.modeBtnIcon}>📷</span> Foto
         </button>
         <button
           className={`${styles.modeBtn} ${inputMode === 'manual' ? styles.modeBtnActive : ''}`}
           onClick={() => switchMode('manual')}
           type="button"
         >
-          <span className={styles.modeBtnIcon}>✏️</span>
-          Manual
+          <span className={styles.modeBtnIcon}>✏️</span> Manual
         </button>
       </div>
 
-      {/* Favorites section */}
-      {favorites.length > 0 && (
-        <div className={styles.favSection}>
-          <button className={styles.favSectionHeader} onClick={() => setShowFavorites(!showFavorites)}>
-            <span>⭐ Favorit Saya ({favorites.length})</span>
-            <span className={styles.favChevron}>{showFavorites ? '▲' : '▼'}</span>
-          </button>
-          {showFavorites && (
-            <div className={styles.favList}>
-              {favorites.map(fav => (
-                <div key={fav.id} className={styles.favItem}>
-                  <div className={styles.favItemInfo}>
-                    <div className={styles.favItemName}>{fav.nama}</div>
-                    <div className={styles.favItemMeta}>{fav.total_kalori} kkal · {fav.porsi}</div>
-                  </div>
-                  <div className={styles.favItemActions}>
-                    <button className={styles.favRelogBtn} onClick={() => relogFavorite(fav)}>Log</button>
-                    <button className={styles.favDeleteBtn} onClick={() => deleteFavorite(fav.id)}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <FavoritesPanel
+        favorites={favorites}
+        show={showFavorites}
+        onToggle={() => setShowFavorites(s => !s)}
+        onRelog={relogFavorite}
+        onDelete={deleteFavorite}
+      />
 
-      {/* FOTO MODE */}
       {inputMode === 'foto' && (
-        <>
-          {!imagePreview ? (
-            <div className={styles.uploadArea} onDrop={onDrop} onDragOver={e => e.preventDefault()}>
-              {/* Input kamera */}
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} hidden />
-              {/* Input galeri/file */}
-              <input ref={galleryRef} type="file" accept="image/*" onChange={onFileChange} hidden />
-
-              <div className={styles.uploadIcon}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </div>
-              <div className={styles.uploadTitle}>Unggah foto makanan</div>
-              <div className={styles.uploadSub}>JPG, PNG, HEIC</div>
-
-              <div className={styles.uploadBtns}>
-                {isMobile && (
-                  <button type="button" className={styles.uploadBtn} onClick={() => fileRef.current?.click()}>
-                    📷 Kamera
-                  </button>
-                )}
-                <button type="button" className={styles.uploadBtn} onClick={() => galleryRef.current?.click()}>
-                  {isMobile ? '🖼️ Galeri' : '📁 Upload File'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.previewWrap}>
-              <img src={imagePreview} alt="preview" className={styles.previewImg} />
-              <button className={styles.removeBtn} onClick={resetPhoto}>✕</button>
-            </div>
-          )}
-        </>
+        <FotoMode
+          imagePreview={imagePreview}
+          isMobile={isMobile}
+          onFileChange={onFileChange}
+          onDrop={onDrop}
+          onReset={resetPhoto}
+        />
       )}
 
-      {/* MANUAL MODE */}
       {inputMode === 'manual' && (
-        <div className={styles.manualForm}>
-
-          {/* Kategori toggle */}
-          <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Kategori</label>
-            <div className={styles.toggleGroup}>
-              {(['Makanan', 'Minuman'] as KategoriOption[]).map(k => (
-                <button key={k} type="button"
-                  className={`${styles.toggleBtn} ${manualKategori === k ? styles.toggleBtnActive : ''}`}
-                  onClick={() => setManualKategori(k)}>
-                  {k === 'Makanan' ? '🍽️ Makanan' : '🥤 Minuman'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Nama */}
-          <div className={styles.manualField}>
-            <label className={styles.manualLabel}>{manualKategori === 'Makanan' ? 'Nama Makanan' : 'Nama Minuman'}</label>
-            <input
-              type="text"
-              placeholder={manualKategori === 'Makanan' ? 'contoh: Nasi goreng, Ayam bakar...' : 'contoh: Es teh manis, Kopi susu...'}
-              value={manualNama}
-              onChange={e => setManualNama(e.target.value)}
-              className={styles.manualInput}
-              maxLength={100}
-            />
-          </div>
-
-          {/* Ukuran porsi */}
-          <div className={styles.manualField}>
-            <label className={styles.manualLabel}>Ukuran {manualKategori === 'Makanan' ? 'Porsi' : 'Minuman'}</label>
-            <div className={styles.chipGroup}>
-              {(['Kecil', 'Normal', 'Besar', 'Ekstra'] as PorsiOption[]).map(p => (
-                <button key={p} type="button"
-                  className={`${styles.chip} ${manualPorsi === p ? styles.chipActive : ''}`}
-                  onClick={() => setManualPorsi(p)}>
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Makanan-only fields */}
-          {manualKategori === 'Makanan' && (
-            <>
-              <div className={styles.manualField}>
-                <label className={styles.manualLabel}>Metode Masak</label>
-                <div className={styles.chipGroup}>
-                  {(['Goreng', 'Bakar', 'Rebus', 'Kukus', 'Mentah'] as MetodeMasakOption[]).map(m => (
-                    <button key={m} type="button"
-                      className={`${styles.chip} ${manualMetode === m ? styles.chipActive : ''}`}
-                      onClick={() => setManualMetode(m)}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.manualField}>
-                <label className={styles.manualLabel}>Pakai Santan?</label>
-                <div className={styles.toggleGroup}>
-                  <button type="button"
-                    className={`${styles.toggleBtn} ${!manualSantan ? styles.toggleBtnActive : ''}`}
-                    onClick={() => setManualSantan(false)}>Tidak</button>
-                  <button type="button"
-                    className={`${styles.toggleBtn} ${manualSantan ? styles.toggleBtnActive : ''}`}
-                    onClick={() => setManualSantan(true)}>Ya</button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Minuman-only fields */}
-          {manualKategori === 'Minuman' && (
-            <>
-              <div className={styles.manualField}>
-                <label className={styles.manualLabel}>Tingkat Kemanisan</label>
-                <div className={styles.chipGroup}>
-                  {(['Tidak Manis', 'Sedikit Manis', 'Manis', 'Sangat Manis'] as MinumanManisOption[]).map(m => (
-                    <button key={m} type="button"
-                      className={`${styles.chip} ${manualManis === m ? styles.chipActive : ''}`}
-                      onClick={() => setManualManis(m)}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.manualField}>
-                <label className={styles.manualLabel}>Suhu</label>
-                <div className={styles.toggleGroup}>
-                  {(['Dingin', 'Hangat', 'Panas'] as MinumanSuhuOption[]).map(s => (
-                    <button key={s} type="button"
-                      className={`${styles.toggleBtn} ${manualSuhu === s ? styles.toggleBtnActive : ''}`}
-                      onClick={() => setManualSuhu(s)}>
-                      {s === 'Dingin' ? '🧊 Dingin' : s === 'Hangat' ? '☕ Hangat' : '🔥 Panas'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <ManualMode
+          kategori={manualKategori} setKategori={setManualKategori}
+          nama={manualNama} setNama={setManualNama}
+          porsi={manualPorsi} setPorsi={setManualPorsi}
+          metode={manualMetode} setMetode={setManualMetode}
+          santan={manualSantan} setSantan={setManualSantan}
+          manis={manualManis} setManis={setManualManis}
+          suhu={manualSuhu} setSuhu={setManualSuhu}
+        />
       )}
 
-      {/* Shared: Target & Keterangan */}
+      {/* Target & Keterangan */}
       <div className={styles.targetRow}>
         <span className={styles.targetLabel}>Target harian</span>
         <input
@@ -488,19 +350,11 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       </div>
 
       {inputMode === 'foto' ? (
-        <button
-          className={styles.analyzeBtn}
-          disabled={!imageBase64 || loading}
-          onClick={analyze}
-        >
+        <button className={styles.analyzeBtn} disabled={!imageBase64 || loading} onClick={analyze}>
           {loading ? 'Menganalisis...' : 'Analisis Kalori'}
         </button>
       ) : (
-        <button
-          className={styles.analyzeBtn}
-          disabled={!manualNama.trim() || loading}
-          onClick={estimateManual}
-        >
+        <button className={styles.analyzeBtn} disabled={!manualNama.trim() || loading} onClick={estimateManual}>
           {loading ? 'Mengestimasi...' : 'Estimasi Kalori'}
         </button>
       )}
@@ -517,88 +371,17 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       )}
 
       {result && (
-        <div className={styles.resultCard}>
-          <div className={styles.resultHeader}>
-            <div className={styles.resultHeaderTop}>
-              <div>
-                <div className={styles.resultName}>{result.nama}</div>
-                <div className={styles.resultPortion}>{result.porsi}</div>
-              </div>
-              {user && (
-                <button
-                  className={`${styles.favBtn} ${savedFavId ? styles.favBtnSaved : ''}`}
-                  onClick={savedFavId ? () => deleteFavorite(savedFavId) : saveFavorite}
-                  disabled={savingFav}
-                >
-                  {savedFavId ? '⭐' : '☆'}
-                </button>
-              )}
-            </div>
-            {result.confidence && (
-              <div className={`${styles.confidenceBadge} ${styles[`confidence_${result.confidence}`]}`}>
-                {result.confidence === 'high' ? '✅ Akurasi Tinggi' : result.confidence === 'medium' ? '⚠️ Akurasi Sedang' : '❓ Akurasi Rendah'}
-              </div>
-            )}
-          </div>
-
-          <div className={styles.kalBig}>
-            <div className={styles.kalNumber}>{result.total_kalori}</div>
-            <div className={styles.kalLabel}>kkal total</div>
-          </div>
-
-          <div className={styles.macros}>
-            <div className={styles.macroPill}>
-              <div className={`${styles.macroVal} ${styles.protein}`}>{result.protein_g}g</div>
-              <div className={styles.macroLbl}>Protein</div>
-            </div>
-            <div className={styles.macroPill}>
-              <div className={`${styles.macroVal} ${styles.karbo}`}>{result.karbo_g}g</div>
-              <div className={styles.macroLbl}>Karbo</div>
-            </div>
-            <div className={styles.macroPill}>
-              <div className={`${styles.macroVal} ${styles.lemak}`}>{result.lemak_g}g</div>
-              <div className={styles.macroLbl}>Lemak</div>
-            </div>
-          </div>
-
-          <div className={styles.progressSection}>
-            <div className={styles.progressLabel}>
-              <span>Dari target harian</span>
-              <span>{pct}%</span>
-            </div>
-            <div className={styles.progressBg}>
-              <div
-                className={`${styles.progressFill} ${pct > 100 ? styles.over : ''}`}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {items.length > 0 && (
-            <div className={styles.breakdown}>
-              <div className={styles.breakdownTitle}>Rincian per item</div>
-              {items.map((item: { nama: string; kalori: number }, i: number) => (
-                <div key={i} className={styles.foodItem}>
-                  <div className={styles.foodDot} />
-                  <div className={styles.foodName}>{item.nama}</div>
-                  <div className={styles.foodKal}>{item.kalori} kkal</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className={styles.tipsBox}>
-            <div className={styles.tipsTitle}>Saran</div>
-            <div>{result.saran}</div>
-          </div>
-
-          <button
-            className={styles.resetBtn}
-            onClick={inputMode === 'foto' ? resetPhoto : resetManual}
-          >
-            {inputMode === 'foto' ? 'Analisis foto lain' : 'Estimasi makanan lain'}
-          </button>
-        </div>
+        <ResultCard
+          result={result}
+          target={target}
+          user={user}
+          inputMode={inputMode}
+          savedFavId={savedFavId}
+          savingFav={savingFav}
+          onSaveFavorite={saveFavorite}
+          onDeleteFavorite={deleteFavorite}
+          onReset={inputMode === 'foto' ? resetPhoto : resetManual}
+        />
       )}
     </div>
   )
