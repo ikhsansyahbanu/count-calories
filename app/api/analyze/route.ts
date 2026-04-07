@@ -3,6 +3,8 @@ import pool, { initDB, updateStreak } from '@/lib/db'
 import { AnalyzeResult } from '@/lib/types'
 import { rateLimit, getIP } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   // Rate limit: 20 analisis per menit per IP
   const ip = getIP(req)

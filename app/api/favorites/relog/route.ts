@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool, { initDB, updateStreak } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     await initDB()

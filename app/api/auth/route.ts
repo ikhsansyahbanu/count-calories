@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getIP } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const COOKIE_NAME = 'kalori_session'
 // Session berlaku 30 hari
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30
