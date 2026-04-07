@@ -49,6 +49,14 @@
   letter-spacing: 0.02em;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px auto 0;
+}
+
 .themeToggle {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -59,11 +67,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 8px auto 0;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s;
 }
 .themeToggle:hover { border-color: var(--accent); background: var(--accent-light); }
+
+.logoutBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.logoutBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
 
 .userPill {
   display: inline-flex;

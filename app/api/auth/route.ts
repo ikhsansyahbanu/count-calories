@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, getIP } from '@/lib/rateLimit'
 
 const COOKIE_NAME = 'kalori_session'
+// Session berlaku 30 hari
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: 'strict' as const,
   path: '/',
-  // Aktifkan secure: true jika deploy dengan HTTPS
+  maxAge: SESSION_MAX_AGE,
+  // Aktifkan jika deploy dengan HTTPS:
   // secure: true,
 }
 
@@ -19,6 +24,15 @@ export async function GET(req: NextRequest) {
 
 // POST /api/auth — login
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 percobaan per 15 menit per IP
+  const ip = getIP(req)
+  if (!rateLimit(`auth:${ip}`, 5, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.' },
+      { status: 429 }
+    )
+  }
+
   const { password } = await req.json()
   const secret = process.env.APP_SECRET
 

@@ -6,7 +6,7 @@ import SummaryTab from '@/components/SummaryTab'
 import WeightTab from '@/components/WeightTab'
 import UserModal from '@/components/UserModal'
 import DailyProgress from '@/components/DailyProgress'
-import AuthGate from '@/components/AuthGate'
+import AuthGate, { useAuth } from '@/components/AuthGate'
 import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
@@ -15,6 +15,7 @@ type Tab = 'analyze' | 'history' | 'weight' | 'summary'
 
 function AppContent() {
   const { user, setUser } = useUser()
+  const { logout } = useAuth()
   const [tab, setTab] = useState<Tab>('analyze')
   const [showUserModal, setShowUserModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -61,9 +62,14 @@ function AppContent() {
           <div className={styles.logo}>Kalori<span>.AI</span></div>
         </div>
         <p className={styles.tagline}>foto makanan → kalori instan</p>
-        <button className={styles.themeToggle} onClick={toggleDark} title="Toggle dark mode">
-          {darkMode ? '☀️' : '🌙'}
-        </button>
+        <div className={styles.headerActions}>
+          <button className={styles.themeToggle} onClick={toggleDark} title="Toggle dark mode">
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+          <button className={styles.logoutBtn} onClick={logout} title="Keluar">
+            ⏏
+          </button>
+        </div>
 
         {user && (
           <button className={styles.userPill} onClick={() => setShowUserModal(true)}>

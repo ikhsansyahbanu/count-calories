@@ -1,6 +1,16 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import styles from './AuthGate.module.css'
+
+interface AuthContextType {
+  logout: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType>({ logout: async () => {} })
+
+export function useAuth() {
+  return useContext(AuthContext)
+}
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking')
@@ -27,6 +37,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       })
       if (res.ok) {
         setStatus('authenticated')
+        setPassword('')
       } else {
         const data = await res.json()
         setError(data.error || 'Password salah')
@@ -38,6 +49,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function logout() {
+    await fetch('/api/auth', { method: 'DELETE' })
+    setStatus('unauthenticated')
+  }
+
   if (status === 'checking') {
     return (
       <div className={styles.overlay}>
@@ -47,7 +63,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === 'authenticated') {
-    return <>{children}</>
+    return (
+      <AuthContext.Provider value={{ logout }}>
+        {children}
+      </AuthContext.Provider>
+    )
   }
 
   return (

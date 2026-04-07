@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { FoodLog, User } from '@/lib/types'
 import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
@@ -13,45 +13,75 @@ interface DayGroup {
 
 type FilterOption = 'Semua' | 'Makan Pagi' | 'Makan Siang' | 'Makan Malam' | 'Snack' | 'Manual'
 
+const PAGE_SIZE = 20
+const filterOptions: FilterOption[] = ['Semua', 'Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack', 'Manual']
+
 export default function HistoryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
-  const [allLogs, setAllLogs] = useState<FoodLog[]>([])
+  const [logs, setLogs] = useState<FoodLog[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
   const [selectedLog, setSelectedLog] = useState<FoodLog | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [confirmDeleteNama, setConfirmDeleteNama] = useState('')
 
-  // Search & filter state
+  const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterOption>('Semua')
   const [page, setPage] = useState(1)
-  const PAGE_SIZE = 20
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounce search input → searchQuery
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput)
+      setPage(1)
+    }, 350)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [searchInput])
+
+  // Reset page when filter changes
+  useEffect(() => { setPage(1) }, [activeFilter])
+
+  // Reset semua state saat user berganti
+  useEffect(() => {
+    setSearchInput('')
+    setSearchQuery('')
+    setActiveFilter('Semua')
+    setPage(1)
+  }, [user?.id])
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const userParam = user?.id ? `&user_id=${user.id}` : ''
-      const res = await fetch(`/api/history?limit=200${userParam}`)
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('limit', String(PAGE_SIZE))
+      if (user?.id) params.set('user_id', String(user.id))
+      if (searchQuery) params.set('search', searchQuery)
+      if (activeFilter !== 'Semua') params.set('keterangan', activeFilter)
+
+      const res = await fetch(`/api/history?${params}`)
       const json = await res.json()
-      if (!json.success) throw new Error()
-      setAllLogs(json.data)
-    } catch {
-      setError('Gagal memuat riwayat makan')
+      if (!json.success) throw new Error(json.error || 'Gagal memuat riwayat')
+      setLogs(json.data)
+      setTotal(json.pagination.total)
+      setTotalPages(json.pagination.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat riwayat makan')
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, page, searchQuery, activeFilter])
 
   useEffect(() => { load() }, [load, refreshKey])
-
-  useEffect(() => {
-    setSearchQuery('')
-    setActiveFilter('Semua')
-    setPage(1)
-  }, [user?.id])
 
   async function deleteLog(id: number) {
     await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
@@ -69,55 +99,27 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
     await fetch('/api/history', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, nama: editValue.trim() })
+      body: JSON.stringify({ id, nama: editValue.trim() }),
     })
     setEditingId(null)
     load()
   }
 
-  // Filter & search logic (client-side)
-  const filteredLogs = useMemo(() => {
-    let logs = allLogs
-
-    // Filter by category
-    if (activeFilter !== 'Semua') {
-      if (activeFilter === 'Manual') {
-        logs = logs.filter(row => row.manual === true)
-      } else {
-        logs = logs.filter(row => row.keterangan === activeFilter)
-      }
-    }
-
-    // Search by nama
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
-      logs = logs.filter(row => row.nama.toLowerCase().includes(q))
-    }
-
-    return logs
-  }, [allLogs, activeFilter, searchQuery])
-
-  // Reset page when filter/search changes
-  useEffect(() => { setPage(1) }, [searchQuery, activeFilter])
-
-  // Paginate filtered logs
-  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE)
-  const pagedLogs = useMemo(() => filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredLogs, page, PAGE_SIZE])
-
-  // Group paginated logs by day
-  const groups = useMemo(() => {
+  // Group logs yang sudah di-fetch by day
+  const groups = useMemo<DayGroup[]>(() => {
     const map: Record<string, DayGroup> = {}
-    pagedLogs.forEach((row: FoodLog) => {
-      const d = new Date(row.created_at)
-      const key = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    logs.forEach(row => {
+      const key = new Date(row.created_at).toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      })
       if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
       map[key].rows.push(row)
       map[key].total += row.total_kalori
     })
     return Object.values(map)
-  }, [pagedLogs])
+  }, [logs])
 
-  const isFiltering = searchQuery.trim() !== '' || activeFilter !== 'Semua'
+  const isFiltering = searchQuery !== '' || activeFilter !== 'Semua'
 
   if (loading) return (
     <div className={styles.loadingWrap}>
@@ -128,15 +130,13 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
 
   if (error) return <div className={styles.errorBox}>{error}</div>
 
-  if (allLogs.length === 0) return (
+  if (!loading && total === 0 && !isFiltering) return (
     <div className={styles.emptyState}>
       <div className={styles.emptyIcon}>🍽️</div>
       <p>Belum ada riwayat makan</p>
       <span>Analisis foto makanan pertamamu!</span>
     </div>
   )
-
-  const filterOptions: FilterOption[] = ['Semua', 'Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack', 'Manual']
 
   return (
     <div className={styles.wrap}>
@@ -162,22 +162,20 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
         <button className={styles.refreshBtn} onClick={load}>Refresh</button>
       </div>
 
-      {/* Search bar */}
       <div className={styles.searchWrap}>
         <span className={styles.searchIcon}>🔍</span>
         <input
           type="text"
           className={styles.searchInput}
           placeholder="Cari nama makanan..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
         />
-        {searchQuery && (
-          <button className={styles.searchClear} onClick={() => setSearchQuery('')}>✕</button>
+        {searchInput && (
+          <button className={styles.searchClear} onClick={() => setSearchInput('')}>✕</button>
         )}
       </div>
 
-      {/* Filter chips */}
       <div className={styles.filterRow}>
         {filterOptions.map(f => (
           <button
@@ -191,18 +189,17 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
         ))}
       </div>
 
-      {/* Empty search state */}
+      {isFiltering && (
+        <div className={styles.resultCount}>
+          {total === 0 ? 'Tidak ada hasil' : `${total} hasil`}
+        </div>
+      )}
+
       {isFiltering && groups.length === 0 && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>🔍</div>
           <p>Tidak ada hasil untuk pencarian ini</p>
           <span>Coba kata kunci lain atau ubah filter</span>
-        </div>
-      )}
-
-      {isFiltering && (
-        <div className={styles.resultCount}>
-          {filteredLogs.length === 0 ? 'Tidak ada hasil' : `${filteredLogs.length} hasil`}
         </div>
       )}
 
@@ -268,7 +265,10 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
                   <div className={styles.logRight}>
                     <div className={styles.logKal}>{row.total_kalori}</div>
                     <div className={styles.logKalUnit}>kkal</div>
-                    <button className={styles.deleteBtn} onClick={e => { e.stopPropagation(); setConfirmDeleteId(row.id); setConfirmDeleteNama(row.nama) }}>✕</button>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(row.id); setConfirmDeleteNama(row.nama) }}
+                    >✕</button>
                   </div>
                 </div>
               )
@@ -277,7 +277,6 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
         )
       })}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className={styles.pagination}>
           <button
@@ -285,7 +284,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
             disabled={page === 1}
             onClick={() => setPage(p => p - 1)}
           >← Sebelumnya</button>
-          <span className={styles.pageInfo}>{page} / {totalPages}</span>
+          <span className={styles.pageInfo}>{page} / {totalPages} ({total} data)</span>
           <button
             className={styles.pageBtn}
             disabled={page === totalPages}

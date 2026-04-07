@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool, { initDB, updateStreak } from '@/lib/db'
 import { AnalyzeResult } from '@/lib/types'
+import { rateLimit, getIP } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 analisis per menit per IP
+  const ip = getIP(req)
+  if (!rateLimit(`analyze:${ip}`, 20, 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Terlalu banyak request. Tunggu sebentar.' },
+      { status: 429 }
+    )
+  }
+
   try {
     await initDB()
 
