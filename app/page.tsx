@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, Component, ReactNode } from 'react'
+import { useState, useEffect, Component, ReactNode, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import AnalyzeTab from '@/components/AnalyzeTab'
 import HistoryTab from '@/components/HistoryTab'
 import SummaryTab from '@/components/SummaryTab'
@@ -11,12 +12,29 @@ import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
 
-type Tab = 'analyze' | 'history' | 'weight' | 'summary'
+const TABS = ['analyze', 'history', 'weight', 'summary'] as const
+type Tab = typeof TABS[number]
+
+function isTab(t: string | null): t is Tab {
+  return TABS.includes(t as Tab)
+}
 
 function AppContent() {
   const { user, setUser, profileLoading } = useUser()
   const { logout } = useAuth()
-  const [tab, setTab] = useState<Tab>('analyze')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [tab, setTabState] = useState<Tab>(() => {
+    const t = searchParams.get('tab')
+    return isTab(t) ? t : 'analyze'
+  })
+
+  function setTab(t: Tab) {
+    setTabState(t)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', t)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
   const [showUserModal, setShowUserModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [darkMode, setDarkMode] = useState(false)
@@ -138,7 +156,9 @@ export default function Home() {
     <ErrorBoundary>
       <UserProvider>
         <AuthGate>
-          <AppContent />
+          <Suspense fallback={null}>
+            <AppContent />
+          </Suspense>
         </AuthGate>
       </UserProvider>
     </ErrorBoundary>

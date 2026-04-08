@@ -222,3 +222,23 @@
   font-size: 0.72rem;
   color: var(--muted);
 }
+
+/* Skeleton loading */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+.skeletonTitle      { height: 20px; width: 110px; }
+.skeletonDaySwitch  { height: 32px; width: 96px;  border-radius: var(--radius-sm); }
+.skeletonStatVal    { height: 30px; width: 65%; margin-bottom: 8px; }
+.skeletonStatLbl    { height: 11px; width: 80%; }
+.skeletonChartTitle { height: 13px; width: 42%; margin-bottom: 16px; }
+.skeletonChart      { height: 150px; border-radius: var(--radius-sm); }

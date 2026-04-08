@@ -1,7 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { User } from '@/lib/types'
+import { getBrowserTimezone } from '@/lib/tz'
 import styles from './WeightTab.module.css'
+
+const TZ = getBrowserTimezone()
 
 interface WeightLog {
   id: number
@@ -77,8 +80,8 @@ export default function WeightTab({ user }: { user: User | null }) {
     </div>
   )
 
-  // Chart data - ambil 30 terakhir, reverse untuk urutan kronologis
-  const chartData = [...logs].reverse().slice(-30)
+  // Chart data — take the 30 most recent entries and reverse into chronological order
+  const chartData = [...logs].slice(0, 30).reverse()
   const weights = chartData.map(l => parseFloat(String(l.berat)))
   const minW = weights.length > 0 ? Math.min(...weights) - 2 : 50
   const maxW = weights.length > 0 ? Math.max(...weights) + 2 : 80
@@ -218,9 +221,9 @@ export default function WeightTab({ user }: { user: User | null }) {
               <div key={log.id} className={styles.logItem}>
                 <div className={styles.logLeft}>
                   <div className={styles.logDate}>
-                    {date.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    {date.toLocaleDateString('id-ID', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                     &nbsp;·&nbsp;
-                    {date.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })}
+                    {date.toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })}
                   </div>
                   {log.catatan && <div className={styles.logCatatan}>{log.catatan}</div>}
                 </div>

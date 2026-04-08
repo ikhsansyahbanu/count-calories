@@ -4,6 +4,16 @@ import { User } from '@/lib/types'
 
 const PROFILE_CACHE_KEY = 'profile_cache'
 
+function isValidUser(obj: unknown): obj is User {
+  if (!obj || typeof obj !== 'object') return false
+  const u = obj as Record<string, unknown>
+  return (
+    typeof u.id === 'number' &&
+    typeof u.nama === 'string' &&
+    typeof u.target_kalori === 'number'
+  )
+}
+
 interface UserContextType {
   user: User | null
   setUser: (u: User | null) => void
@@ -28,7 +38,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return null
     try {
       const cached = localStorage.getItem(PROFILE_CACHE_KEY)
-      return cached ? (JSON.parse(cached) as User) : null
+      if (!cached) return null
+      const parsed = JSON.parse(cached)
+      return isValidUser(parsed) ? parsed : null
     } catch {
       return null
     }

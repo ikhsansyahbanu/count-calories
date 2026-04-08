@@ -24,6 +24,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function handleAuthSuccess() {
+    refreshAuth()
+    setUsername('')
+    setPassword('')
+    setConfirmPassword('')
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -35,9 +42,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
       if (res.ok) {
-        refreshAuth()
-        setUsername('')
-        setPassword('')
+        handleAuthSuccess()
       } else {
         const data = await res.json()
         setError(data.error || 'Username atau password salah')
@@ -62,7 +67,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     setLoading(true)
     setError('')
     try {
-      // Buat user baru
       const regRes = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,10 +84,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
       if (loginRes.ok) {
-        refreshAuth()
-        setUsername('')
-        setPassword('')
-        setConfirmPassword('')
+        handleAuthSuccess()
       } else {
         setError('Akun dibuat, tapi gagal login otomatis. Silakan login manual.')
         setMode('login')

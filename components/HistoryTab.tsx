@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { FoodLog, User } from '@/lib/types'
 import { parseItems } from '@/lib/utils'
+import { getBrowserTimezone } from '@/lib/tz'
 import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
 
@@ -16,6 +17,7 @@ type FilterOption = 'Semua' | 'Makan Pagi' | 'Makan Siang' | 'Makan Malam' | 'Sn
 
 const PAGE_SIZE = 20
 const filterOptions: FilterOption[] = ['Semua', 'Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack', 'Manual']
+const TZ = getBrowserTimezone()
 
 export default function HistoryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
   const [logs, setLogs] = useState<FoodLog[]>([])
@@ -47,8 +49,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [searchInput])
 
-  // Reset page when filter changes
-  useEffect(() => { setPage(1) }, [activeFilter])
+  // (page reset on filter change is handled inline in the click handler to avoid double-fetch)
 
   // Reset semua state saat user berganti
   useEffect(() => {
@@ -112,12 +113,12 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
     load()
   }
 
-  // Group logs yang sudah di-fetch by day (pakai timezone Asia/Jakarta agar konsisten dengan server)
+  // Group logs yang sudah di-fetch by day using user's local timezone
   const groups = useMemo<DayGroup[]>(() => {
     const map: Record<string, DayGroup> = {}
     logs.forEach(row => {
       const key = new Date(row.created_at).toLocaleDateString('id-ID', {
-        timeZone: 'Asia/Jakarta',
+        timeZone: TZ,
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
       if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
@@ -130,9 +131,37 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
   const isFiltering = searchQuery !== '' || activeFilter !== 'Semua'
 
   if (loading) return (
-    <div className={styles.loadingWrap}>
-      <div className={styles.spinner} />
-      <p>Memuat riwayat...</p>
+    <div className={styles.wrap}>
+      <div className={styles.topBar}>
+        <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+      </div>
+      <div className={`${styles.skeleton} ${styles.skeletonSearch}`} />
+      <div className={styles.filterRow}>
+        {[...Array(5)].map((_, i) => <div key={i} className={`${styles.skeleton} ${styles.skeletonChip}`} />)}
+      </div>
+      {[...Array(2)].map((_, gi) => (
+        <div key={gi} className={styles.dayGroup}>
+          <div className={styles.dayHeader}>
+            <div>
+              <div className={`${styles.skeleton} ${styles.skeletonDayDate}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonDayMeta}`} />
+            </div>
+            <div className={`${styles.skeleton} ${styles.skeletonDayTotal}`} />
+          </div>
+          <div className={styles.dayBar} />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className={styles.logItem} style={{ cursor: 'default' }}>
+              <div className={styles.logLeft}>
+                <div className={`${styles.skeleton} ${styles.skeletonLogName}`} />
+                <div className={`${styles.skeleton} ${styles.skeletonLogMeta}`} />
+              </div>
+              <div className={styles.logRight}>
+                <div className={`${styles.skeleton} ${styles.skeletonLogKal}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   )
 
@@ -190,7 +219,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
             key={f}
             type="button"
             className={`${styles.filterChip} ${activeFilter === f ? styles.filterChipActive : ''}`}
-            onClick={() => setActiveFilter(f)}
+            onClick={() => { setActiveFilter(f); setPage(1) }}
           >
             {f}
           </button>
@@ -236,7 +265,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
 
             {group.rows.map(row => {
               const items = parseItems(row.items)
-              const time = new Date(row.created_at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })
+              const time = new Date(row.created_at).toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={row.id} className={styles.logItem} onClick={() => editingId !== row.id && setSelectedLog(row)}>
                   <div className={styles.logLeft}>

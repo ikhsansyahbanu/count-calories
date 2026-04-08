@@ -333,3 +333,26 @@
   padding: 1px 8px;
   white-space: nowrap;
 }
+
+/* Skeleton loading */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+.skeletonTitle   { height: 20px; width: 130px; }
+.skeletonSearch  { height: 42px; border-radius: var(--radius-sm); }
+.skeletonChip    { height: 28px; width: 64px;  border-radius: 99px; }
+.skeletonDayDate { height: 16px; width: 160px; margin-bottom: 6px; }
+.skeletonDayMeta { height: 11px; width: 110px; }
+.skeletonDayTotal{ height: 18px; width: 60px; }
+.skeletonLogName { height: 14px; width: 55%; margin-bottom: 6px; }
+.skeletonLogMeta { height: 11px; width: 35%; }
+.skeletonLogKal  { height: 20px; width: 44px; }
