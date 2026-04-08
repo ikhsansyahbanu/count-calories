@@ -17,6 +17,24 @@
   margin-bottom: 12px;
 }
 
+.cardHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.badge_low    { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+.badge_normal { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+.badge_warning { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(212,147,10,0.25); }
+.badge_over   { background: var(--red-light); color: var(--red); border: 1px solid rgba(224,82,82,0.25); }
+
 .cardTitle {
   font-size: 0.82rem;
   font-weight: 600;
@@ -74,6 +92,22 @@
   font-weight: 600;
 }
 
+.emptyCtaBtn {
+  margin-top: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 12px rgba(61,158,80,0.3);
+}
+.emptyCtaBtn:hover { opacity: 0.9; }
+.emptyCtaBtn:active { transform: scale(0.97); }
+
 .macroHint {
   margin-top: 8px;
   font-size: 0.75rem;
@@ -81,35 +115,69 @@
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-weight: 500;
+  border-left: 3px solid var(--accent);
 }
 
-.kalRow {
+.weekInsightChip {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.kalBig {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1;
-}
-
-.kalSep {
-  font-size: 0.9rem;
-  color: var(--muted2);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  cursor: default;
+  border: 1px solid transparent;
+}
+button.weekInsightChip { cursor: pointer; transition: opacity 0.2s; }
+button.weekInsightChip:hover { opacity: 0.85; }
+.weekInsightArrow { flex-shrink: 0; font-size: 0.8rem; margin-top: 1px; }
+
+.weekInsight_good    { background: var(--accent-light); color: var(--accent); border-color: var(--accent-border); }
+.weekInsight_warning { background: var(--amber-light);  color: #7a5500;       border-color: rgba(212,147,10,0.25); }
+.weekInsight_danger  { background: var(--red-light);    color: #8b2020;       border-color: rgba(224,82,82,0.25); }
+
+.heroRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.kalTarget {
-  font-size: 0.9rem;
+.heroNumber {
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+}
+
+.heroLabel {
+  font-size: 0.72rem;
   color: var(--muted);
   font-weight: 600;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.heroSub {
+  text-align: right;
+  padding-bottom: 4px;
+}
+
+.kalConsumed {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .kalUnit {

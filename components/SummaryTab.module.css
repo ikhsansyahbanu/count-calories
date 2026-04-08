@@ -78,6 +78,20 @@
   letter-spacing: 0.07em;
 }
 
+.macroToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.macroToggle:hover .chartTitle { color: var(--text); }
+.macroToggleChevron { font-size: 0.65rem; color: var(--muted); }
+.macroChartInner { margin-top: 16px; }
+
 .chartWrap {
   position: relative;
   overflow-x: auto;
@@ -160,29 +174,6 @@
   color: #8b2020;
 }
 
-.macroCard {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-}
-.macroRow { display: flex; flex-direction: column; gap: 6px; }
-.macroMeta { display: flex; justify-content: space-between; align-items: baseline; }
-.macroName { font-size: 0.84rem; font-weight: 600; color: var(--text2); }
-.macroVal { font-size: 0.9rem; font-weight: 700; }
-.macroBarBg {
-  height: 7px;
-  background: var(--surface2);
-  border-radius: 99px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-.macroBarFill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
-.macroTarget { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
 
 /* Macro trend chart */
 .macroChartHeader {

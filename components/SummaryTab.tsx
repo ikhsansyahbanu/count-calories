@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { DaySummary, User } from '@/lib/types'
 import { getBrowserTimezone } from '@/lib/tz'
-import MacroChart, { MacroTab, MACRO_CONFIG } from './MacroChart'
+import MacroChart, { MacroTab } from './MacroChart'
+import { getSaranList } from '@/lib/insights'
 import styles from './SummaryTab.module.css'
 
 export default function SummaryTab({ user }: { user: User | null }) {
@@ -10,6 +11,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(7)
   const [macroTab, setMacroTab] = useState<MacroTab>('protein')
+  const [showMacroChart, setShowMacroChart] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -90,27 +92,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const target = data[data.length - 1]?.target_kalori || user?.target_kalori || 2000
   const maxKal = Math.max(...data.map(d => d.total_kalori), target)
 
-  // Adaptive macro targets derived from user's calorie target
-  const proteinTarget = Math.round((target * MACRO_CONFIG.protein.pct) / MACRO_CONFIG.protein.kcalPerG)
-  const karboTarget   = Math.round((target * MACRO_CONFIG.karbo.pct)   / MACRO_CONFIG.karbo.kcalPerG)
-  const lemakTarget   = Math.round((target * MACRO_CONFIG.lemak.pct)   / MACRO_CONFIG.lemak.kcalPerG)
-
-  const saranList: { type: 'warning' | 'danger' | 'good'; text: string }[] = []
-  const kalPct = Math.round((avgKal / target) * 100)
-
-  if (kalPct > 120) saranList.push({ type: 'danger', text: `Kalori rata-rata ${kalPct}% dari target. → Besok, kurangi 1 porsi nasi atau skip 1 gorengan & minuman manis.` })
-  else if (kalPct > 100) saranList.push({ type: 'warning', text: `Kalori sedikit melebihi target (${kalPct}%). → Ganti 1 camilan dengan buah atau yogurt rendah lemak.` })
-  else if (kalPct < 70) saranList.push({ type: 'warning', text: `Asupan kalori terlalu rendah (${kalPct}%). → Tambah 1 porsi makan atau camilan padat nutrisi agar energi optimal.` })
-  else saranList.push({ type: 'good', text: `Kalori terkontrol minggu ini (${kalPct}% dari target) — pertahankan ritme ini!` })
-
-  if (avgProtein > proteinTarget * 1.25) saranList.push({ type: 'warning', text: `Protein rata-rata ${avgProtein}g/hari — di atas batas ideal ${proteinTarget}g. → Kurangi porsi daging merah, ganti dengan tempe atau ikan.` })
-  else if (avgProtein < 50) saranList.push({ type: 'danger', text: `Protein hanya ${avgProtein}g/hari. → Tambah 2 butir telur atau 1 porsi tahu/tempe di setiap makan utama.` })
-
-  if (avgKarbo > karboTarget * 1.25) saranList.push({ type: 'danger', text: `Karbohidrat rata-rata ${avgKarbo}g/hari. → Ganti nasi putih dengan nasi merah atau kurangi setengah porsi nasi mulai besok.` })
-  else if (avgKarbo > karboTarget * 1.1) saranList.push({ type: 'warning', text: `Karbohidrat ${avgKarbo}g/hari sedikit berlebihan. → Pilih karbohidrat kompleks (ubi, oat) dan hindari roti putih & mi instan.` })
-
-  if (avgLemak > lemakTarget * 1.25) saranList.push({ type: 'danger', text: `Lemak rata-rata ${avgLemak}g/hari — melebihi batas. → Ganti gorengan dengan panggang/rebus, dan batasi santan.` })
-  else if (avgLemak > lemakTarget * 1.1) saranList.push({ type: 'warning', text: `Lemak ${avgLemak}g/hari mendekati batas. → Kurangi 1 porsi makanan berminyak per hari, pilih metode masak lebih sehat.` })
+  const saranList = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, target)
 
   return (
     <div className={styles.wrap}>
@@ -149,6 +131,19 @@ export default function SummaryTab({ user }: { user: User | null }) {
           </div>
           <div className={styles.statLbl}>Dari target</div>
         </div>
+      </div>
+
+      {/* Saran */}
+      <div className={styles.saranCard}>
+        <div className={styles.chartTitle}>Langkah Selanjutnya</div>
+        {saranList.map((s, i) => (
+          <div key={i} className={`${styles.saranItem} ${styles[s.type]}`}>
+            <span className={styles.saranIcon}>
+              {s.type === 'good' ? '✅' : s.type === 'warning' ? '⚠️' : '🚨'}
+            </span>
+            <span>{s.text}</span>
+          </div>
+        ))}
       </div>
 
       {/* Bar chart */}
@@ -190,52 +185,26 @@ export default function SummaryTab({ user }: { user: User | null }) {
         </div>
       </div>
 
-      {/* Macro trend chart — extracted component */}
-      <MacroChart
-        data={data}
-        daysWithData={daysWithData}
-        macroTab={macroTab}
-        onMacroTabChange={setMacroTab}
-        target={target}
-        days={days}
-      />
-
-      {/* Saran */}
-      <div className={styles.saranCard}>
-        <div className={styles.chartTitle}>Langkah Selanjutnya</div>
-        {saranList.map((s, i) => (
-          <div key={i} className={`${styles.saranItem} ${styles[s.type]}`}>
-            <span className={styles.saranIcon}>
-              {s.type === 'good' ? '✅' : s.type === 'warning' ? '⚠️' : '🚨'}
-            </span>
-            <span>{s.text}</span>
+      {/* Macro trend chart — collapsible */}
+      <div className={styles.chartCard}>
+        <button className={styles.macroToggle} onClick={() => setShowMacroChart(s => !s)}>
+          <span className={styles.chartTitle} style={{ margin: 0 }}>Tren Makronutrien</span>
+          <span className={styles.macroToggleChevron}>{showMacroChart ? '▲' : '▼'}</span>
+        </button>
+        {showMacroChart && (
+          <div className={styles.macroChartInner}>
+            <MacroChart
+              data={data}
+              daysWithData={daysWithData}
+              macroTab={macroTab}
+              onMacroTabChange={setMacroTab}
+              target={target}
+              days={days}
+            />
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Macro breakdown */}
-      <div className={styles.macroCard}>
-        <div className={styles.chartTitle}>Rata-rata Makronutrien / Hari</div>
-        {[
-          { label: 'Protein', val: avgProtein, max: proteinTarget, color: 'var(--teal)', unit: 'g', targetStr: `~${proteinTarget}g/hari` },
-          { label: 'Karbo',   val: avgKarbo,   max: karboTarget,   color: 'var(--amber)', unit: 'g', targetStr: `~${karboTarget}g/hari` },
-          { label: 'Lemak',   val: avgLemak,   max: lemakTarget,   color: 'var(--red)',   unit: 'g', targetStr: `~${lemakTarget}g/hari` },
-        ].map(m => (
-          <div key={m.label} className={styles.macroRow}>
-            <div className={styles.macroMeta}>
-              <span className={styles.macroName}>{m.label}</span>
-              <span className={styles.macroVal} style={{ color: m.color }}>{m.val}{m.unit}</span>
-            </div>
-            <div className={styles.macroBarBg}>
-              <div
-                className={styles.macroBarFill}
-                style={{ width: `${Math.min((m.val / m.max) * 100, 100)}%`, background: m.color }}
-              />
-            </div>
-            <div className={styles.macroTarget}>Target: {m.targetStr}</div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

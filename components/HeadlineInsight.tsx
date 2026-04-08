@@ -10,11 +10,15 @@ interface Headline {
   type: 'good' | 'warn' | 'info'
 }
 
-export default function HeadlineInsight({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
+export default function HeadlineInsight({ user, refreshKey, onStartLog }: { user: User | null; refreshKey?: number; onStartLog?: () => void }) {
   const [headline, setHeadline] = useState<Headline | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [noData, setNoData] = useState(false)
 
   useEffect(() => {
     if (!user?.id) return
+    setLoading(true)
+    setNoData(false)
     const tz = getBrowserTimezone()
     fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}`)
       .then(r => r.json())
@@ -22,7 +26,7 @@ export default function HeadlineInsight({ user, refreshKey }: { user: User | nul
         if (!json.success) return
         const data: Array<{ jumlah_makan: number; total_kalori: number; total_protein: number; target_kalori: number }> = json.data
         const daysWithData = data.filter(d => d.jumlah_makan > 0)
-        if (daysWithData.length === 0) return
+        if (daysWithData.length === 0) { setNoData(true); return }
 
         const target = data[data.length - 1]?.target_kalori || user.target_kalori || 2000
         const avgKal = Math.round(daysWithData.reduce((s, d) => s + d.total_kalori, 0) / daysWithData.length)
@@ -48,7 +52,24 @@ export default function HeadlineInsight({ user, refreshKey }: { user: User | nul
         setHeadline(h)
       })
       .catch(() => {})
+      .finally(() => setLoading(false))
   }, [user?.id, refreshKey])
+
+  if (!user) return null
+
+  if (loading) return <div className={styles.skeleton} />
+
+  if (noData) {
+    const content = (
+      <>
+        <span className={styles.icon}>📸</span>
+        <span className={styles.text}>Belum ada data minggu ini — foto makanan pertamamu untuk mulai</span>
+      </>
+    )
+    return onStartLog
+      ? <button className={`${styles.wrap} ${styles.info} ${styles.clickable}`} onClick={onStartLog}>{content}</button>
+      : <div className={`${styles.wrap} ${styles.info}`}>{content}</div>
+  }
 
   if (!headline) return null
 

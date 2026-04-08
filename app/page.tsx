@@ -107,9 +107,9 @@ function AppContent() {
         ) : null}
       </header>
 
-      <DailyProgress user={user} refreshKey={refreshKey} />
+      <DailyProgress user={user} refreshKey={refreshKey} onStartLog={() => setTab('analyze')} onGoToSummary={() => setTab('summary')} />
 
-      <HeadlineInsight user={user} refreshKey={refreshKey} />
+      <HeadlineInsight user={user} refreshKey={refreshKey} onStartLog={() => setTab('analyze')} />
 
       <div className={styles.tabs}>
         {(['analyze', 'history', 'weight', 'summary'] as Tab[]).map(t => (

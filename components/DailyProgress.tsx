@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { User } from '@/lib/types'
+import { getSaranList } from '@/lib/insights'
+import { getBrowserTimezone } from '@/lib/tz'
 import styles from './DailyProgress.module.css'
 
 interface TodayData {
@@ -23,9 +25,15 @@ function getMealContext(): string {
   return 'makan malam'
 }
 
-export default function DailyProgress({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
+interface WeekInsight {
+  type: 'warning' | 'danger' | 'good'
+  text: string
+}
+
+export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSummary }: { user: User | null; refreshKey?: number; onStartLog?: () => void; onGoToSummary?: () => void }) {
   const [data, setData] = useState<TodayData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [weekInsight, setWeekInsight] = useState<WeekInsight | null>(null)
 
   useEffect(() => {
     if (!user?.id) {
@@ -40,6 +48,26 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+  }, [user?.id, refreshKey])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const tz = getBrowserTimezone()
+    fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}`)
+      .then(r => r.json())
+      .then(json => {
+        if (!json.success) return
+        const days = json.data.filter((d: { jumlah_makan: number }) => d.jumlah_makan > 0)
+        if (days.length === 0) return
+        const t = json.data[json.data.length - 1]?.target_kalori || user.target_kalori || 2000
+        const avgKal     = Math.round(days.reduce((s: number, d: { total_kalori: number }) => s + d.total_kalori, 0) / days.length)
+        const avgProtein = Math.round(days.reduce((s: number, d: { total_protein: number }) => s + Number(d.total_protein), 0) / days.length)
+        const avgKarbo   = Math.round(days.reduce((s: number, d: { total_karbo: number }) => s + Number(d.total_karbo), 0) / days.length)
+        const avgLemak   = Math.round(days.reduce((s: number, d: { total_lemak: number }) => s + Number(d.total_lemak), 0) / days.length)
+        const top = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, t)[0]
+        if (top) setWeekInsight(top)
+      })
+      .catch(() => {})
   }, [user?.id, refreshKey])
 
   if (!user) return null
@@ -107,11 +135,18 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
         <span className={styles.cardTitle}>
           Hari ini{data && data.jumlah_makan > 0 ? ` · ${data.jumlah_makan}x makan` : ''}
         </span>
-        {showStreak && (
-          <span className={`${styles.streak} ${streak === 1 ? styles.streakFirst : ''}`}>
-            {streak === 1 ? '🌱 Hari pertama!' : `🔥 ${streak} hari`}
-          </span>
-        )}
+        <div className={styles.cardHeaderRight}>
+          {status !== 'empty' && (
+            <span className={`${styles.statusBadge} ${styles[`badge_${status}`]}`}>
+              {status === 'over' ? '✕ Over' : status === 'warning' ? '⚠ Hampir' : '✓ On Track'}
+            </span>
+          )}
+          {showStreak && (
+            <span className={`${styles.streak} ${streak === 1 ? styles.streakFirst : ''}`}>
+              {streak === 1 ? '🌱 Hari pertama!' : `🔥 ${streak} hari`}
+            </span>
+          )}
+        </div>
       </div>
 
       {loading && !data ? (
@@ -120,16 +155,33 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
         <div className={styles.emptyState}>
           <span className={styles.emptyIcon}>🍽️</span>
           <span>Belum ada catatan hari ini</span>
-          <span className={styles.emptyHint}>Foto makananmu untuk mulai</span>
+          {onStartLog ? (
+            <button className={styles.emptyCtaBtn} onClick={onStartLog}>
+              📷 Foto Makanan Sekarang
+            </button>
+          ) : (
+            <span className={styles.emptyHint}>Foto makananmu untuk mulai</span>
+          )}
         </div>
       ) : (
         <>
-          <div className={styles.kalRow}>
-            <span className={styles.kalBig}>{kalori.toLocaleString('id-ID')}</span>
-            <span className={styles.kalUnit}>kkal</span>
-            <span className={styles.kalSep}>dari</span>
-            <span className={styles.kalTarget}>{target.toLocaleString('id-ID')}</span>
-            <span className={styles.kalUnit}>target</span>
+          <div className={styles.heroRow}>
+            <div>
+              <div className={styles.heroNumber} style={{
+                color: status === 'over' ? 'var(--red)' : status === 'warning' ? 'var(--amber)' : 'var(--accent)'
+              }}>
+                {status === 'over'
+                  ? `+${lebih.toLocaleString('id-ID')}`
+                  : sisa.toLocaleString('id-ID')}
+              </div>
+              <div className={styles.heroLabel}>
+                {status === 'over' ? 'kkal melebihi target' : 'kkal tersisa hari ini'}
+              </div>
+            </div>
+            <div className={styles.heroSub}>
+              <span className={styles.kalConsumed}>{kalori.toLocaleString('id-ID')}</span>
+              <span className={styles.kalUnit}> / {target.toLocaleString('id-ID')} kkal</span>
+            </div>
           </div>
 
           <div className={styles.progressWrap}>
@@ -161,6 +213,22 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
 
           {macroHint && (
             <div className={styles.macroHint}>💡 {macroHint}</div>
+          )}
+
+          {weekInsight && (
+            onGoToSummary ? (
+              <button
+                className={`${styles.weekInsightChip} ${styles[`weekInsight_${weekInsight.type}`]}`}
+                onClick={onGoToSummary}
+              >
+                <span>📊 {weekInsight.text}</span>
+                <span className={styles.weekInsightArrow}>→</span>
+              </button>
+            ) : (
+              <div className={`${styles.weekInsightChip} ${styles[`weekInsight_${weekInsight.type}`]}`}>
+                📊 {weekInsight.text}
+              </div>
+            )
           )}
         </>
       )}
