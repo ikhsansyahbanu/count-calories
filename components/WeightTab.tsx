@@ -24,8 +24,12 @@ export default function WeightTab({ user }: { user: User | null }) {
     setLoading(true)
     try {
       const res = await fetch(`/api/weight`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) setLogs(json.data)
+      else throw new Error(json.error || 'Gagal memuat data berat')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat data berat')
     } finally {
       setLoading(false)
     }

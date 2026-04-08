@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { FoodLog, User } from '@/lib/types'
+import { parseItems } from '@/lib/utils'
 import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
 
@@ -87,8 +88,9 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
     setConfirmDeleteId(null)
     if (!res.ok) {
       setError('Gagal menghapus log. Coba lagi.')
+      return
     }
-    load()
+    await load()
   }
 
   function startEdit(row: FoodLog) {
@@ -233,9 +235,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
             </div>
 
             {group.rows.map(row => {
-              const items = typeof row.items === 'string'
-                ? (() => { try { return JSON.parse(row.items as string) } catch { return [] } })()
-                : (row.items || [])
+              const items = parseItems(row.items)
               const time = new Date(row.created_at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={row.id} className={styles.logItem} onClick={() => editingId !== row.id && setSelectedLog(row)}>

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     if (userId) {
       params.push(userId)
-      conditions.push(`userId = $${params.length}`)
+      conditions.push(`user_id = $${params.length}`)
     }
     if (date) {
       params.push(date)

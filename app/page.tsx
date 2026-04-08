@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component, ReactNode } from 'react'
 import AnalyzeTab from '@/components/AnalyzeTab'
 import HistoryTab from '@/components/HistoryTab'
 import SummaryTab from '@/components/SummaryTab'
@@ -113,12 +113,34 @@ function AppContent() {
   )
 }
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h2>Terjadi kesalahan</h2>
+          <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>{this.state.error.message}</p>
+          <button onClick={() => this.setState({ error: null })}>Coba lagi</button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export default function Home() {
   return (
-    <AuthGate>
-      <UserProvider>
-        <AppContent />
-      </UserProvider>
-    </AuthGate>
+    <ErrorBoundary>
+      <AuthGate>
+        <UserProvider>
+          <AppContent />
+        </UserProvider>
+      </AuthGate>
+    </ErrorBoundary>
   )
 }

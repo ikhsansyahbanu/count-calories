@@ -1,5 +1,6 @@
 'use client'
 import { FoodLog } from '@/lib/types'
+import { parseItems } from '@/lib/utils'
 import styles from './LogDetail.module.css'
 
 interface Props {
@@ -8,9 +9,7 @@ interface Props {
 }
 
 export default function LogDetail({ log, onClose }: Props) {
-  const items = typeof log.items === 'string'
-    ? (() => { try { return JSON.parse(log.items as string) } catch { return [] } })()
-    : (log.items || [])
+  const items = parseItems(log.items)
   const time = new Date(log.created_at).toLocaleString('id-ID', {
     timeZone: 'Asia/Jakarta',
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -18,6 +17,11 @@ export default function LogDetail({ log, onClose }: Props) {
   })
   const pct = Math.round((log.total_kalori / log.target_kalori) * 100)
   const over = pct > 100
+
+  // Macro targets derived from this log's calorie target
+  const proteinMax = Math.round((log.target_kalori * 0.25) / 4)
+  const karboMax   = Math.round((log.target_kalori * 0.50) / 4)
+  const lemakMax   = Math.round((log.target_kalori * 0.25) / 9)
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -63,17 +67,17 @@ export default function LogDetail({ log, onClose }: Props) {
             <div className={styles.macroCard}>
               <div className={styles.macroVal} style={{ color: 'var(--teal)' }}>{log.protein_g}g</div>
               <div className={styles.macroLbl}>Protein</div>
-              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.protein_g / 175) * 100, 100)}%`, background: 'var(--teal)' }} /></div>
+              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.protein_g / proteinMax) * 100, 100)}%`, background: 'var(--teal)' }} /></div>
             </div>
             <div className={styles.macroCard}>
               <div className={styles.macroVal} style={{ color: 'var(--amber)' }}>{log.karbo_g}g</div>
               <div className={styles.macroLbl}>Karbohidrat</div>
-              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.karbo_g / 300) * 100, 100)}%`, background: 'var(--amber)' }} /></div>
+              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.karbo_g / karboMax) * 100, 100)}%`, background: 'var(--amber)' }} /></div>
             </div>
             <div className={styles.macroCard}>
               <div className={styles.macroVal} style={{ color: 'var(--red)' }}>{log.lemak_g}g</div>
               <div className={styles.macroLbl}>Lemak</div>
-              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.lemak_g / 80) * 100, 100)}%`, background: 'var(--red)' }} /></div>
+              <div className={styles.macroBar}><div style={{ width: `${Math.min((log.lemak_g / lemakMax) * 100, 100)}%`, background: 'var(--red)' }} /></div>
             </div>
           </div>
         </div>

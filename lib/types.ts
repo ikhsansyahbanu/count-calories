@@ -20,7 +20,7 @@ export interface FoodLog {
   protein_g: number
   karbo_g: number
   lemak_g: number
-  items: FoodItem[]
+  items: FoodItem[] | string
   saran: string
   target_kalori: number
   keterangan: string
@@ -57,7 +57,7 @@ export interface FoodFavorite {
   protein_g: number
   karbo_g: number
   lemak_g: number
-  items: FoodItem[]
+  items: FoodItem[] | string
   created_at: string
 }
 
