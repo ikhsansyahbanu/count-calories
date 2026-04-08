@@ -141,25 +141,38 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     }
   }
 
-  function handleFile(file: File) {
-    // Reject HEIC/HEIF early — canvas cannot decode them on most browsers
-    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
-      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
-    if (isHeic) {
-      setError('Format HEIC tidak didukung. Di iPhone, buka Pengaturan → Kamera → Format → pilih "Paling Kompatibel" agar foto tersimpan sebagai JPG.')
-      return
-    }
-
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!validTypes.includes(file.type) && file.type !== '') {
-      setError('Format tidak didukung. Gunakan JPG, PNG, atau WebP.')
-      return
-    }
-
+  async function handleFile(file: File) {
     // Limit file size before reading to avoid memory crash on mobile (20MB)
     if (file.size > 20 * 1024 * 1024) {
       setError('Foto terlalu besar (maks 20MB). Coba foto dengan kualitas lebih rendah.')
       return
+    }
+
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!isHeic && !validTypes.includes(file.type) && file.type !== '') {
+      setError('Format tidak didukung. Gunakan JPG, PNG, atau WebP.')
+      return
+    }
+
+    let processedFile: File | Blob = file
+
+    // Convert HEIC/HEIF to JPEG using heic2any (client-side, no backend needed)
+    if (isHeic) {
+      setLoading(true)
+      try {
+        const heic2any = (await import('heic2any')).default
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+        processedFile = Array.isArray(converted) ? converted[0] : converted
+      } catch {
+        setError('Gagal mengkonversi foto HEIC. Coba screenshot foto tersebut lalu upload screenshot-nya.')
+        setLoading(false)
+        return
+      } finally {
+        setLoading(false)
+      }
     }
 
     setMediaType('image/jpeg')
@@ -203,7 +216,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       }
       img.src = dataUrl
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(processedFile)
   }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
