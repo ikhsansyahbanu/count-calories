@@ -14,7 +14,7 @@ import styles from './page.module.css'
 type Tab = 'analyze' | 'history' | 'weight' | 'summary'
 
 function AppContent() {
-  const { user, setUser } = useUser()
+  const { user, setUser, profileLoading } = useUser()
   const { logout } = useAuth()
   const [tab, setTab] = useState<Tab>('analyze')
   const [showUserModal, setShowUserModal] = useState(false)
@@ -46,18 +46,9 @@ function AppContent() {
     ? (user.berat_badan / Math.pow(user.tinggi_badan / 100, 2)).toFixed(1)
     : null
 
-  // Tampilkan loading sementara user dari session belum dimuat
-  if (!user) {
-    return (
-      <main className={styles.main} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
-        <div style={{ width: 36, height: 36, border: '3px solid var(--border2)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-      </main>
-    )
-  }
-
   return (
     <main className={styles.main}>
-      {showUserModal && (
+      {showUserModal && user && (
         <UserModal
           onUpdate={handleUpdateUser}
           currentUser={user}
@@ -80,18 +71,22 @@ function AppContent() {
           </button>
         </div>
 
-        <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
-          <div className={styles.userPillAvatar}>{user.nama[0]?.toUpperCase() ?? '?'}</div>
-          <div className={styles.userPillInfo}>
-            <span className={styles.userPillName}>{user.nama}</span>
-            <span className={styles.userPillMeta}>
-              {user.berat_badan > 0 && `${user.berat_badan}kg`}
-              {bmi && ` · BMI ${bmi}`}
-              {` · ${user.target_kalori} kkal`}
-            </span>
-          </div>
-          <span className={styles.userPillEdit}>✏️</span>
-        </button>
+        {user ? (
+          <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
+            <div className={styles.userPillAvatar}>{user.nama[0]?.toUpperCase() ?? '?'}</div>
+            <div className={styles.userPillInfo}>
+              <span className={styles.userPillName}>{user.nama}</span>
+              <span className={styles.userPillMeta}>
+                {user.berat_badan > 0 && `${user.berat_badan}kg`}
+                {bmi && ` · BMI ${bmi}`}
+                {` · ${user.target_kalori} kkal`}
+              </span>
+            </div>
+            <span className={styles.userPillEdit}>✏️</span>
+          </button>
+        ) : profileLoading ? (
+          <div className={styles.userPillSkeleton} />
+        ) : null}
       </header>
 
       <DailyProgress user={user} refreshKey={refreshKey} />
