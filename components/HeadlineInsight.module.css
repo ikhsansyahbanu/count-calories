@@ -1,0 +1,42 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 0.79rem;
+  font-weight: 600;
+  line-height: 1.35;
+  animation: fadeUp 0.4s 0.05s ease both;
+  border: 1px solid transparent;
+}
+
+.icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.text {
+  flex: 1;
+}
+
+.good {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.warn {
+  background: var(--amber-light);
+  color: var(--amber);
+  border-color: rgba(212, 147, 10, 0.25);
+}
+
+.info {
+  background: var(--surface);
+  color: var(--muted);
+  border-color: var(--border);
+}

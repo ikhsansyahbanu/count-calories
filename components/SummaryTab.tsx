@@ -98,19 +98,19 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const saranList: { type: 'warning' | 'danger' | 'good'; text: string }[] = []
   const kalPct = Math.round((avgKal / target) * 100)
 
-  if (kalPct > 120) saranList.push({ type: 'danger', text: `Rata-rata kalori kamu ${kalPct}% dari target — terlalu tinggi. Kurangi porsi nasi, gorengan, atau minuman manis.` })
-  else if (kalPct > 100) saranList.push({ type: 'warning', text: `Rata-rata kalori sedikit melebihi target (${kalPct}%). Coba kurangi 1 porsi camilan per hari.` })
-  else if (kalPct < 70) saranList.push({ type: 'warning', text: `Asupan kalori terlalu rendah (${kalPct}% dari target). Pastikan makan cukup agar energi tetap optimal.` })
-  else saranList.push({ type: 'good', text: `Asupan kalori kamu terkontrol dengan baik (${kalPct}% dari target). Pertahankan!` })
+  if (kalPct > 120) saranList.push({ type: 'danger', text: `Kalori rata-rata ${kalPct}% dari target. → Besok, kurangi 1 porsi nasi atau skip 1 gorengan & minuman manis.` })
+  else if (kalPct > 100) saranList.push({ type: 'warning', text: `Kalori sedikit melebihi target (${kalPct}%). → Ganti 1 camilan dengan buah atau yogurt rendah lemak.` })
+  else if (kalPct < 70) saranList.push({ type: 'warning', text: `Asupan kalori terlalu rendah (${kalPct}%). → Tambah 1 porsi makan atau camilan padat nutrisi agar energi optimal.` })
+  else saranList.push({ type: 'good', text: `Kalori terkontrol minggu ini (${kalPct}% dari target) — pertahankan ritme ini!` })
 
-  if (avgProtein > proteinTarget * 1.25) saranList.push({ type: 'warning', text: `Protein rata-rata ${avgProtein}g/hari — di atas batas ideal ${proteinTarget}g. Kurangi suplemen protein atau porsi daging.` })
-  else if (avgProtein < 50) saranList.push({ type: 'danger', text: `Protein terlalu rendah (${avgProtein}g/hari). Tambahkan telur, tahu, tempe, atau daging tanpa lemak.` })
+  if (avgProtein > proteinTarget * 1.25) saranList.push({ type: 'warning', text: `Protein rata-rata ${avgProtein}g/hari — di atas batas ideal ${proteinTarget}g. → Kurangi porsi daging merah, ganti dengan tempe atau ikan.` })
+  else if (avgProtein < 50) saranList.push({ type: 'danger', text: `Protein hanya ${avgProtein}g/hari. → Tambah 2 butir telur atau 1 porsi tahu/tempe di setiap makan utama.` })
 
-  if (avgKarbo > karboTarget * 1.25) saranList.push({ type: 'danger', text: `Karbohidrat rata-rata ${avgKarbo}g/hari — terlalu tinggi. Ganti nasi putih dengan nasi merah atau batasi roti & mi.` })
-  else if (avgKarbo > karboTarget * 1.1) saranList.push({ type: 'warning', text: `Karbohidrat ${avgKarbo}g/hari sedikit berlebihan. Coba kurangi porsi nasi atau pilih karbohidrat kompleks.` })
+  if (avgKarbo > karboTarget * 1.25) saranList.push({ type: 'danger', text: `Karbohidrat rata-rata ${avgKarbo}g/hari. → Ganti nasi putih dengan nasi merah atau kurangi setengah porsi nasi mulai besok.` })
+  else if (avgKarbo > karboTarget * 1.1) saranList.push({ type: 'warning', text: `Karbohidrat ${avgKarbo}g/hari sedikit berlebihan. → Pilih karbohidrat kompleks (ubi, oat) dan hindari roti putih & mi instan.` })
 
-  if (avgLemak > lemakTarget * 1.25) saranList.push({ type: 'danger', text: `Lemak rata-rata ${avgLemak}g/hari — melebihi batas. Hindari gorengan dan pilih metode masak yang lebih sehat.` })
-  else if (avgLemak > lemakTarget * 1.1) saranList.push({ type: 'warning', text: `Lemak ${avgLemak}g/hari mendekati batas atas. Kurangi makanan berminyak atau santan berlebih.` })
+  if (avgLemak > lemakTarget * 1.25) saranList.push({ type: 'danger', text: `Lemak rata-rata ${avgLemak}g/hari — melebihi batas. → Ganti gorengan dengan panggang/rebus, dan batasi santan.` })
+  else if (avgLemak > lemakTarget * 1.1) saranList.push({ type: 'warning', text: `Lemak ${avgLemak}g/hari mendekati batas. → Kurangi 1 porsi makanan berminyak per hari, pilih metode masak lebih sehat.` })
 
   return (
     <div className={styles.wrap}>
@@ -202,7 +202,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
 
       {/* Saran */}
       <div className={styles.saranCard}>
-        <div className={styles.chartTitle}>Saran & Evaluasi</div>
+        <div className={styles.chartTitle}>Langkah Selanjutnya</div>
         {saranList.map((s, i) => (
           <div key={i} className={`${styles.saranItem} ${styles[s.type]}`}>
             <span className={styles.saranIcon}>

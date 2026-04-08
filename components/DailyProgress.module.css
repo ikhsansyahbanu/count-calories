@@ -47,6 +47,44 @@
   padding: 6px 0 2px;
 }
 
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0 2px;
+  text-align: center;
+}
+
+.emptyState > span:nth-child(2) {
+  font-size: 0.84rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.emptyIcon {
+  font-size: 1.4rem;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.emptyHint {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.macroHint {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-weight: 500;
+}
+
 .kalRow {
   display: flex;
   align-items: baseline;

@@ -7,6 +7,7 @@ import SummaryTab from '@/components/SummaryTab'
 import WeightTab from '@/components/WeightTab'
 import UserModal from '@/components/UserModal'
 import DailyProgress from '@/components/DailyProgress'
+import HeadlineInsight from '@/components/HeadlineInsight'
 import AuthGate, { useAuth } from '@/components/AuthGate'
 import { UserProvider, useUser } from '@/components/UserContext'
 import { User } from '@/lib/types'
@@ -79,7 +80,6 @@ function AppContent() {
           <div className={styles.logoIcon}>🥗</div>
           <div className={styles.logo}>Kalori<span>.AI</span></div>
         </div>
-        <p className={styles.tagline}>foto makanan → kalori instan</p>
         <div className={styles.headerActions}>
           <button className={styles.themeToggle} onClick={toggleDark} title="Toggle dark mode">
             {darkMode ? '☀️' : '🌙'}
@@ -109,6 +109,8 @@ function AppContent() {
 
       <DailyProgress user={user} refreshKey={refreshKey} />
 
+      <HeadlineInsight user={user} refreshKey={refreshKey} />
+
       <div className={styles.tabs}>
         {(['analyze', 'history', 'weight', 'summary'] as Tab[]).map(t => (
           <button
@@ -116,7 +118,7 @@ function AppContent() {
             className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'analyze' ? 'Analisis' : t === 'history' ? 'Riwayat' : t === 'weight' ? 'Berat' : 'Ringkasan'}
+            {t === 'analyze' ? '+ Catat' : t === 'history' ? 'Riwayat' : t === 'weight' ? 'Berat' : 'Ringkasan'}
           </button>
         ))}
       </div>

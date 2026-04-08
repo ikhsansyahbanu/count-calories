@@ -15,6 +15,14 @@ interface TodayData {
 
 type Status = 'empty' | 'low' | 'normal' | 'warning' | 'over'
 
+function getMealContext(): string {
+  const h = new Date().getHours()
+  if (h < 10) return 'sarapan'
+  if (h < 14) return 'makan siang'
+  if (h < 18) return 'camilan sore'
+  return 'makan malam'
+}
+
 export default function DailyProgress({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
   const [data, setData] = useState<TodayData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -50,26 +58,27 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
 
   const sisa = target - kalori
   const lebih = kalori - target
+  const mealCtx = getMealContext()
 
   const statusConfig: Record<Status, { msg: string; msgClass: string; fillClass: string }> = {
     empty: { msg: '', msgClass: '', fillClass: styles.progressFillBlue },
     low: {
-      msg: `Kamu masih punya ruang ${sisa.toLocaleString('id-ID')} kkal lagi`,
+      msg: `Masih ada ${sisa.toLocaleString('id-ID')} kkal — pas untuk ${mealCtx} sehat`,
       msgClass: styles.statusBlue,
       fillClass: styles.progressFillBlue,
     },
     normal: {
-      msg: `Kamu sudah makan ${kalori.toLocaleString('id-ID')} kkal, sisa ${sisa.toLocaleString('id-ID')} kkal`,
+      msg: `On track! Sisa ${sisa.toLocaleString('id-ID')} kkal untuk ${mealCtx}`,
       msgClass: styles.statusGreen,
       fillClass: styles.progressFillGreen,
     },
     warning: {
-      msg: `Hampir mencapai target, sisa ${sisa.toLocaleString('id-ID')} kkal`,
+      msg: `Hampir limit — pilih ${mealCtx} ringan (buah, sup, atau salad)`,
       msgClass: styles.statusAmber,
       fillClass: styles.progressFillAmber,
     },
     over: {
-      msg: `Melebihi target sebesar ${lebih.toLocaleString('id-ID')} kkal`,
+      msg: `Melebihi ${lebih.toLocaleString('id-ID')} kkal — cukup air putih & istirahat`,
       msgClass: styles.statusRed,
       fillClass: styles.progressFillRed,
     },
@@ -80,11 +89,23 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
   const streak = data?.streak ?? 0
   const showStreak = streak >= 1
 
+  // Macro insight: which macro needs attention?
+  const proteinTarget = Math.round((target * 0.25) / 4)
+  const lemakTarget = Math.round((target * 0.25) / 9)
+  const protein = data?.protein ?? 0
+  const lemak = data?.lemak ?? 0
+
+  let macroHint: string | null = null
+  if (data && data.jumlah_makan > 0) {
+    if (protein < proteinTarget * 0.5) macroHint = `Protein baru ${protein}g — tambah telur, tahu, atau tempe`
+    else if (lemak > lemakTarget * 1.3) macroHint = `Lemak ${lemak}g sudah tinggi — hindari gorengan berikutnya`
+  }
+
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
         <span className={styles.cardTitle}>
-          Hari ini{data && data.jumlah_makan > 0 ? ` · ${data.jumlah_makan} kali makan` : ''}
+          Hari ini{data && data.jumlah_makan > 0 ? ` · ${data.jumlah_makan}x makan` : ''}
         </span>
         {showStreak && (
           <span className={`${styles.streak} ${streak === 1 ? styles.streakFirst : ''}`}>
@@ -96,7 +117,11 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
       {loading && !data ? (
         <div className={styles.skeleton} style={{ height: 60, borderRadius: 10 }} />
       ) : status === 'empty' ? (
-        <div className={styles.empty}>Belum ada catatan hari ini</div>
+        <div className={styles.emptyState}>
+          <span className={styles.emptyIcon}>🍽️</span>
+          <span>Belum ada catatan hari ini</span>
+          <span className={styles.emptyHint}>Foto makananmu untuk mulai</span>
+        </div>
       ) : (
         <>
           <div className={styles.kalRow}>
@@ -133,6 +158,10 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
               <div className={styles.macroLbl}>Lemak</div>
             </div>
           </div>
+
+          {macroHint && (
+            <div className={styles.macroHint}>💡 {macroHint}</div>
+          )}
         </>
       )}
     </div>
