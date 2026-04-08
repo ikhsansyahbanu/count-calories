@@ -8,9 +8,11 @@ interface Props {
   onToggle: () => void
   onRelog: (fav: FoodFavorite) => void
   onDelete: (id: number) => void
+  reloggingId?: number | null
+  loggedIds?: Set<number>
 }
 
-export default function FavoritesPanel({ favorites, show, onToggle, onRelog, onDelete }: Props) {
+export default function FavoritesPanel({ favorites, show, onToggle, onRelog, onDelete, reloggingId, loggedIds }: Props) {
   if (favorites.length === 0) return null
 
   return (
@@ -21,18 +23,28 @@ export default function FavoritesPanel({ favorites, show, onToggle, onRelog, onD
       </button>
       {show && (
         <div className={styles.favList}>
-          {favorites.map(fav => (
-            <div key={fav.id} className={styles.favItem}>
-              <div className={styles.favItemInfo}>
-                <div className={styles.favItemName}>{fav.nama}</div>
-                <div className={styles.favItemMeta}>{fav.total_kalori} kkal · {fav.porsi}</div>
+          {favorites.map(fav => {
+            const isLogging = reloggingId === fav.id
+            const isLogged = loggedIds?.has(fav.id)
+            return (
+              <div key={fav.id} className={styles.favItem}>
+                <div className={styles.favItemInfo}>
+                  <div className={styles.favItemName}>{fav.nama}</div>
+                  <div className={styles.favItemMeta}>{fav.total_kalori} kkal · {fav.porsi}</div>
+                </div>
+                <div className={styles.favItemActions}>
+                  <button
+                    className={`${styles.favRelogBtn} ${isLogged ? styles.favRelogBtnLogged : ''}`}
+                    onClick={() => onRelog(fav)}
+                    disabled={isLogging || reloggingId != null}
+                  >
+                    {isLogging ? '...' : isLogged ? '✓' : 'Log'}
+                  </button>
+                  <button className={styles.favDeleteBtn} onClick={() => onDelete(fav.id)}>✕</button>
+                </div>
               </div>
-              <div className={styles.favItemActions}>
-                <button className={styles.favRelogBtn} onClick={() => onRelog(fav)}>Log</button>
-                <button className={styles.favDeleteBtn} onClick={() => onDelete(fav.id)}>✕</button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

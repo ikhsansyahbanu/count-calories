@@ -22,6 +22,7 @@ interface Props {
   setManis: (v: MinumanManisOption) => void
   suhu: MinumanSuhuOption
   setSuhu: (v: MinumanSuhuOption) => void
+  onSubmit?: () => void
 }
 
 export default function ManualMode({
@@ -32,6 +33,7 @@ export default function ManualMode({
   santan, setSantan,
   manis, setManis,
   suhu, setSuhu,
+  onSubmit,
 }: Props) {
   return (
     <div className={styles.manualForm}>
@@ -55,8 +57,10 @@ export default function ManualMode({
           placeholder={kategori === 'Makanan' ? 'contoh: Nasi goreng, Ayam bakar...' : 'contoh: Es teh manis, Kopi susu...'}
           value={nama}
           onChange={e => setNama(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && nama.trim()) onSubmit?.() }}
           className={styles.manualInput}
           maxLength={100}
+          autoFocus
         />
       </div>
 

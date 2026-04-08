@@ -473,6 +473,8 @@
   transition: opacity 0.15s;
 }
 .favRelogBtn:hover { opacity: 0.85; }
+.favRelogBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.favRelogBtnLogged { background: var(--green, #22c55e) !important; }
 
 .favDeleteBtn {
   background: transparent;

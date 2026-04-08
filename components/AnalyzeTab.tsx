@@ -41,6 +41,8 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   const [showFavorites, setShowFavorites] = useState(false)
   const [savingFav, setSavingFav] = useState(false)
   const [savedFavId, setSavedFavId] = useState<number | null>(null)
+  const [reloggingFavId, setReloggingFavId] = useState<number | null>(null)
+  const [loggedFavIds, setLoggedFavIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
@@ -119,10 +121,8 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   }
 
   async function relogFavorite(fav: FoodFavorite) {
-    setLoading(true)
-    setError(null)
-    setResult(null)
-    setShowFavorites(false)
+    if (reloggingFavId != null) return
+    setReloggingFavId(fav.id)
     try {
       const res = await fetch('/api/favorites/relog', {
         method: 'POST',
@@ -131,12 +131,13 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal log ulang favorit.')
-      setResult(json.data)
+      setLoggedFavIds(prev => new Set(prev).add(fav.id))
       onAnalyzed?.()
+      setTimeout(() => setLoggedFavIds(prev => { const s = new Set(prev); s.delete(fav.id); return s }), 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal log ulang favorit.')
     } finally {
-      setLoading(false)
+      setReloggingFavId(null)
     }
   }
 
@@ -290,6 +291,8 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         onToggle={() => setShowFavorites(s => !s)}
         onRelog={relogFavorite}
         onDelete={deleteFavorite}
+        reloggingId={reloggingFavId}
+        loggedIds={loggedFavIds}
       />
 
       {inputMode === 'foto' && (
@@ -311,6 +314,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           santan={manualSantan} setSantan={setManualSantan}
           manis={manualManis} setManis={setManualManis}
           suhu={manualSuhu} setSuhu={setManualSuhu}
+          onSubmit={estimateManual}
         />
       )}
 
