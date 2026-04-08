@@ -142,6 +142,26 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   }
 
   function handleFile(file: File) {
+    // Reject HEIC/HEIF early — canvas cannot decode them on most browsers
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+    if (isHeic) {
+      setError('Format HEIC tidak didukung. Di iPhone, buka Pengaturan → Kamera → Format → pilih "Paling Kompatibel" agar foto tersimpan sebagai JPG.')
+      return
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!validTypes.includes(file.type) && file.type !== '') {
+      setError('Format tidak didukung. Gunakan JPG, PNG, atau WebP.')
+      return
+    }
+
+    // Limit file size before reading to avoid memory crash on mobile (20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Foto terlalu besar (maks 20MB). Coba foto dengan kualitas lebih rendah.')
+      return
+    }
+
     setMediaType('image/jpeg')
     const reader = new FileReader()
     reader.onerror = () => {
@@ -150,6 +170,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
       const img = new Image()
+      img.onerror = () => {
+        setError('Gagal memuat gambar. Format mungkin tidak didukung browser ini.')
+      }
       img.onload = () => {
         const canvas = document.createElement('canvas')
         const MAX = 800
@@ -158,7 +181,15 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         else { width = Math.round(width * MAX / height); height = MAX }
         canvas.width = width
         canvas.height = height
-        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+
+        // getContext can return null on mobile if GPU memory is exhausted
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          setError('Gagal memproses gambar. Coba tutup aplikasi lain lalu ulangi.')
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
         let quality = 0.7
         let compressed = canvas.toDataURL('image/jpeg', quality)
         while (compressed.length > 1_300_000 && quality > 0.3) {

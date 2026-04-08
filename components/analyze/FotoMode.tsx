@@ -25,7 +25,9 @@ export default function FotoMode({ imagePreview, isMobile, onFileChange, onDrop,
 
   return (
     <div className={styles.uploadArea} onDrop={onDrop} onDragOver={e => e.preventDefault()}>
+      {/* capture="environment" opens camera directly — separate from gallery picker */}
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} hidden />
+      {/* No capture attribute — shows OS file picker with gallery access. Must use image/* not specific MIME types — specific types cause onChange to silently not fire on iOS Safari and some Android browsers */}
       <input ref={galleryRef} type="file" accept="image/*" onChange={onFileChange} hidden />
 
       <div className={styles.uploadIcon}>
@@ -35,7 +37,7 @@ export default function FotoMode({ imagePreview, isMobile, onFileChange, onDrop,
         </svg>
       </div>
       <div className={styles.uploadTitle}>Unggah foto makanan</div>
-      <div className={styles.uploadSub}>JPG, PNG, HEIC</div>
+      <div className={styles.uploadSub}>JPG, PNG, WebP</div>
 
       <div className={styles.uploadBtns}>
         {isMobile && (
