@@ -286,7 +286,6 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
                         {row.keterangan && <span className={styles.logKet}>{row.keterangan}</span>}
                         {row.manual && <span className={styles.logManualBadge}>Manual</span>}
                         {row.nama}
-                        <button className={styles.editBtn} onClick={() => startEdit(row)} title="Edit nama">✏️</button>
                       </div>
                     )}
                     <div className={styles.logMeta}>
@@ -302,10 +301,17 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
                   <div className={styles.logRight}>
                     <div className={styles.logKal}>{row.total_kalori}</div>
                     <div className={styles.logKalUnit}>kkal</div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(row.id); setConfirmDeleteNama(row.nama) }}
-                    >✕</button>
+                    <div className={styles.logActions}>
+                      <button
+                        className={styles.editBtn}
+                        onClick={e => { e.stopPropagation(); startEdit(row) }}
+                        title="Edit nama"
+                      >✏️</button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={e => { e.stopPropagation(); setConfirmDeleteId(row.id); setConfirmDeleteNama(row.nama) }}
+                      >✕</button>
+                    </div>
                   </div>
                 </div>
               )

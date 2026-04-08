@@ -97,14 +97,16 @@
 .logRight { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: 12px; }
 .logKal { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
 .logKalUnit { font-size: 0.65rem; color: var(--muted); }
+.logActions { display: flex; gap: 2px; align-items: center; margin-top: 4px; }
 .deleteBtn {
   background: none;
   border: none;
   color: var(--muted2);
-  font-size: 11px;
+  font-size: 13px;
+  min-width: 32px; min-height: 32px;
   padding: 4px 6px;
   border-radius: 6px;
-  margin-top: 2px;
+  display: flex; align-items: center; justify-content: center;
   transition: color 0.2s, background 0.2s;
 }
 .deleteBtn:hover { color: var(--red); background: var(--red-light); }
@@ -174,14 +176,16 @@
 .editBtn {
   background: none;
   border: none;
-  font-size: 11px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+  font-size: 13px;
+  min-width: 32px; min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
   cursor: pointer;
+  transition: color 0.2s, background 0.2s;
 }
-.logItem:hover .editBtn { opacity: 1; }
+.editBtn:hover { color: var(--accent); background: var(--accent-light); }
 
 .editRow {
   display: flex;
