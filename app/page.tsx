@@ -136,11 +136,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 export default function Home() {
   return (
     <ErrorBoundary>
-      <AuthGate>
-        <UserProvider>
+      <UserProvider>
+        <AuthGate>
           <AppContent />
-        </UserProvider>
-      </AuthGate>
+        </AuthGate>
+      </UserProvider>
     </ErrorBoundary>
   )
 }

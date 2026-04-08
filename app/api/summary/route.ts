@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     const result = await pool.query(`
       SELECT
-        DATE(created_at AT TIME ZONE 'Asia/Jakarta') as tanggal,
+        TO_CHAR(DATE(created_at AT TIME ZONE 'Asia/Jakarta'), 'YYYY-MM-DD') as tanggal,
         SUM(total_kalori)::integer as total_kalori,
         ROUND(SUM(protein_g)::numeric, 1) as total_protein,
         ROUND(SUM(karbo_g)::numeric, 1) as total_karbo,
@@ -34,7 +34,9 @@ export async function GET(req: NextRequest) {
       ORDER BY tanggal DESC
     `, params)
 
-    return NextResponse.json({ success: true, data: result.rows })
+    const response = NextResponse.json({ success: true, data: result.rows })
+    response.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=3600')
+    return response
 
   } catch (err) {
     console.error('[/api/summary]', err)

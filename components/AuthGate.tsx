@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, createContext, useContext } from 'react'
+import { useUser } from '@/components/UserContext'
 import styles from './AuthGate.module.css'
 
 interface AuthContextType {
@@ -15,23 +16,13 @@ export function useAuth() {
 type Mode = 'login' | 'register'
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated' | 'error'>('checking')
+  const { authenticated, authChecked, refreshAuth, setUser } = useUser()
   const [mode, setMode] = useState<Mode>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  function checkAuth() {
-    setStatus('checking')
-    fetch('/api/auth')
-      .then(r => r.json())
-      .then(data => setStatus(data.authenticated ? 'authenticated' : 'unauthenticated'))
-      .catch(() => setStatus('error'))
-  }
-
-  useEffect(() => { checkAuth() }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -44,7 +35,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
       if (res.ok) {
-        setStatus('authenticated')
+        refreshAuth()
         setUsername('')
         setPassword('')
       } else {
@@ -89,7 +80,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
       if (loginRes.ok) {
-        setStatus('authenticated')
+        refreshAuth()
         setUsername('')
         setPassword('')
         setConfirmPassword('')
@@ -106,7 +97,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
-    setStatus('unauthenticated')
+    setUser(null)
   }
 
   function switchMode(m: Mode) {
@@ -116,7 +107,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     setConfirmPassword('')
   }
 
-  if (status === 'checking') {
+  if (!authChecked) {
     return (
       <div className={styles.overlay}>
         <div className={styles.spinner} />
@@ -124,20 +115,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (status === 'error') {
-    return (
-      <div className={styles.overlay}>
-        <div className={styles.card}>
-          <div className={styles.icon}>⚠️</div>
-          <h1 className={styles.title}>Gagal terhubung</h1>
-          <p className={styles.subtitle}>Tidak dapat terhubung ke server. Periksa koneksi internet kamu.</p>
-          <button className={styles.btn} onClick={checkAuth}>Coba Lagi</button>
-        </div>
-      </div>
-    )
-  }
-
-  if (status === 'authenticated') {
+  if (authenticated) {
     return (
       <AuthContext.Provider value={{ logout }}>
         {children}

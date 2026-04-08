@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // Rate limit: 5 percobaan per 15 menit per IP
   const ip = getIP(req)
-  if (!rateLimit(`auth:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!await rateLimit(`auth:${ip}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.' },
       { status: 429 }

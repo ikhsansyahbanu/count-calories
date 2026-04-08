@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   // Rate limit: 20 analisis per menit per IP
   const ip = getIP(req)
-  if (!rateLimit(`analyze:${ip}`, 20, 60 * 1000)) {
+  if (!await rateLimit(`analyze:${ip}`, 20, 60 * 1000)) {
     return NextResponse.json(
       { error: 'Terlalu banyak request. Tunggu sebentar.' },
       { status: 429 }

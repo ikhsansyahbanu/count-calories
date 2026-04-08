@@ -21,7 +21,7 @@ const COOKIE_OPTIONS = {
 // Akses: user_id + APP_SECRET sebagai konfirmasi admin
 export async function POST(req: NextRequest) {
   const ip = getIP(req)
-  if (!rateLimit(`setup:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!await rateLimit(`setup:${ip}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.' },
       { status: 429 }
