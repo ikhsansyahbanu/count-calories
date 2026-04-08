@@ -9,12 +9,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const daysRaw = parseInt(searchParams.get('days') || '7')
     const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 365) : 7
-    const user_id = searchParams.get('user_id')
+    const userId = parseInt(req.headers.get('x-user-id') || '0') || null
 
     const params: (string | number)[] = [days]
     let userFilter = ''
-    if (user_id) {
-      params.push(user_id)
+    if (userId) {
+      params.push(userId)
       userFilter = `AND user_id = $${params.length}`
     }
 

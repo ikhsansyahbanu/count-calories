@@ -12,18 +12,26 @@ export function useAuth() {
   return useContext(AuthContext)
 }
 
+type Mode = 'login' | 'register'
+
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated' | 'error'>('checking')
+  const [mode, setMode] = useState<Mode>('login')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  function checkAuth() {
+    setStatus('checking')
     fetch('/api/auth')
       .then(r => r.json())
       .then(data => setStatus(data.authenticated ? 'authenticated' : 'unauthenticated'))
       .catch(() => setStatus('error'))
-  }, [])
+  }
+
+  useEffect(() => { checkAuth() }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -33,14 +41,61 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       })
       if (res.ok) {
         setStatus('authenticated')
+        setUsername('')
         setPassword('')
       } else {
         const data = await res.json()
-        setError(data.error || 'Password salah')
+        setError(data.error || 'Username atau password salah')
+      }
+    } catch {
+      setError('Gagal terhubung ke server')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak cocok')
+      return
+    }
+    if (password.length < 6) {
+      setError('Password minimal 6 karakter')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      // Buat user baru
+      const regRes = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama: username, password }),
+      })
+      const regData = await regRes.json()
+      if (!regRes.ok) {
+        setError(regData.error || 'Gagal membuat akun')
+        return
+      }
+      // Auto-login setelah register
+      const loginRes = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      if (loginRes.ok) {
+        setStatus('authenticated')
+        setUsername('')
+        setPassword('')
+        setConfirmPassword('')
+      } else {
+        setError('Akun dibuat, tapi gagal login otomatis. Silakan login manual.')
+        setMode('login')
       }
     } catch {
       setError('Gagal terhubung ke server')
@@ -52,6 +107,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
     setStatus('unauthenticated')
+  }
+
+  function switchMode(m: Mode) {
+    setMode(m)
+    setError('')
+    setPassword('')
+    setConfirmPassword('')
   }
 
   if (status === 'checking') {
@@ -69,9 +131,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           <div className={styles.icon}>⚠️</div>
           <h1 className={styles.title}>Gagal terhubung</h1>
           <p className={styles.subtitle}>Tidak dapat terhubung ke server. Periksa koneksi internet kamu.</p>
-          <button className={styles.btn} onClick={() => { setStatus('checking'); fetch('/api/auth').then(r => r.json()).then(data => setStatus(data.authenticated ? 'authenticated' : 'unauthenticated')).catch(() => setStatus('error')) }}>
-            Coba Lagi
-          </button>
+          <button className={styles.btn} onClick={checkAuth}>Coba Lagi</button>
         </div>
       </div>
     )
@@ -90,23 +150,57 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       <div className={styles.card}>
         <div className={styles.icon}>🥗</div>
         <h1 className={styles.title}>Kalori<span>.AI</span></h1>
-        <p className={styles.subtitle}>Masukkan password untuk melanjutkan</p>
+        <p className={styles.subtitle}>
+          {mode === 'login' ? 'Masuk ke akunmu' : 'Buat akun baru'}
+        </p>
 
-        <form onSubmit={handleLogin} className={styles.form}>
+        <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className={styles.form}>
+          <input
+            type="text"
+            className={styles.input}
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            autoFocus
+            required
+          />
           <input
             type="password"
             className={styles.input}
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            autoFocus
             required
           />
+          {mode === 'register' && (
+            <input
+              type="password"
+              className={styles.input}
+              placeholder="Konfirmasi Password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+            />
+          )}
           {error && <p className={styles.error}>{error}</p>}
           <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? 'Memverifikasi...' : 'Masuk'}
+            {loading
+              ? (mode === 'login' ? 'Memverifikasi...' : 'Membuat akun...')
+              : (mode === 'login' ? 'Masuk' : 'Daftar')}
           </button>
         </form>
+
+        <p className={styles.switchText}>
+          {mode === 'login' ? (
+            <>Belum punya akun?{' '}
+              <button className={styles.switchBtn} onClick={() => switchMode('register')}>Daftar</button>
+            </>
+          ) : (
+            <>Sudah punya akun?{' '}
+              <button className={styles.switchBtn} onClick={() => switchMode('login')}>Masuk</button>
+            </>
+          )}
+        </p>
       </div>
     </div>
   )

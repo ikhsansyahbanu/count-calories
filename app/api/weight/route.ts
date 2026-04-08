@@ -6,13 +6,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     await initDB()
-    const rawUserId = req.nextUrl.searchParams.get('user_id')
-    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
-    if (!user_id) return NextResponse.json({ success: true, data: [] })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ success: true, data: [] })
 
     const result = await pool.query(
       `SELECT * FROM weight_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 90`,
-      [user_id]
+      [userId]
     )
     return NextResponse.json({ success: true, data: result.rows })
   } catch (err) {
@@ -24,21 +23,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await initDB()
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
-    const user_id = parseInt(body.user_id)
     const berat = parseFloat(body.berat)
     const catatan = String(body.catatan ?? '').trim().slice(0, 200)
 
-    if (!user_id || isNaN(user_id)) {
-      return NextResponse.json({ error: 'user_id tidak valid' }, { status: 400 })
-    }
     if (!berat || isNaN(berat) || berat < 10 || berat > 500) {
       return NextResponse.json({ error: 'Berat badan tidak valid (10–500 kg)' }, { status: 400 })
     }
 
     const result = await pool.query(
       `INSERT INTO weight_logs (user_id, berat, catatan) VALUES ($1,$2,$3) RETURNING *`,
-      [user_id, berat, catatan]
+      [userId, berat, catatan]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
@@ -54,7 +52,8 @@ export async function DELETE(req: NextRequest) {
     const id = rawId && /^\d+$/.test(rawId) ? parseInt(rawId) : null
     if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 })
 
-    await pool.query(`DELETE FROM weight_logs WHERE id = $1`, [id])
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    await pool.query(`DELETE FROM weight_logs WHERE id = $1 AND user_id = $2`, [id, userId])
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[DELETE /api/weight]', err)

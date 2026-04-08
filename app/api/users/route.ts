@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 import pool, { initDB } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+// GET /api/users — return hanya profil user yang sedang login
+export async function GET(req: NextRequest) {
   try {
     await initDB()
-    const result = await pool.query('SELECT * FROM users ORDER BY created_at ASC')
-    return NextResponse.json({ success: true, data: result.rows })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const result = await pool.query(
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak
+       FROM users WHERE id = $1`,
+      [userId]
+    )
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 })
+    }
+    return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
     console.error('[/api/users GET]', err)
     return NextResponse.json({ error: 'Gagal mengambil data user' }, { status: 500 })
@@ -36,6 +48,8 @@ function validateUserFields(body: Record<string, unknown>) {
   return { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori }
 }
 
+// POST /api/users — registrasi user baru (bisa diakses tanpa login — butuh password)
+// Route ini dikecualikan dari middleware auth karena dipanggil saat register
 export async function POST(req: NextRequest) {
   try {
     await initDB()
@@ -43,11 +57,27 @@ export async function POST(req: NextRequest) {
     const validated = validateUserFields(body)
     if ('error' in validated) return NextResponse.json({ error: validated.error }, { status: 400 })
 
+    const password = String(body.password ?? '')
+    if (!password || password.length < 6) {
+      return NextResponse.json({ error: 'Password minimal 6 karakter' }, { status: 400 })
+    }
+
+    // Cek apakah nama sudah dipakai
+    const existing = await pool.query(
+      `SELECT id FROM users WHERE LOWER(nama) = LOWER($1)`,
+      [validated.nama]
+    )
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ error: 'Nama sudah digunakan, pilih nama lain' }, { status: 409 })
+    }
+
+    const password_hash = await bcrypt.hash(password, 12)
     const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = validated
     const result = await pool.query(
-      `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori]
+      `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak`,
+      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
@@ -56,21 +86,43 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH /api/users — update profil sendiri (dan opsional ganti password)
 export async function PATCH(req: NextRequest) {
   try {
     await initDB()
-    const body = await req.json()
-    const id = parseInt(body.id)
-    if (!id || isNaN(id)) return NextResponse.json({ error: 'ID wajib diisi' }, { status: 400 })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const body = await req.json()
     const validated = validateUserFields(body)
     if ('error' in validated) return NextResponse.json({ error: validated.error }, { status: 400 })
 
     const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = validated
+
+    // Ganti password jika field password dikirim
+    const newPassword = String(body.password ?? '').trim()
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return NextResponse.json({ error: 'Password baru minimal 6 karakter' }, { status: 400 })
+      }
+      const password_hash = await bcrypt.hash(newPassword, 12)
+      await pool.query(
+        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7, password_hash=$8
+         WHERE id=$9`,
+        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, userId]
+      )
+    } else {
+      await pool.query(
+        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7
+         WHERE id=$8`,
+        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, userId]
+      )
+    }
+
     const result = await pool.query(
-      `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7
-       WHERE id=$8 RETURNING *`,
-      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, id]
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak
+       FROM users WHERE id = $1`,
+      [userId]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
@@ -79,14 +131,14 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+// DELETE /api/users — hapus akun sendiri
 export async function DELETE(req: NextRequest) {
   try {
     await initDB()
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    await pool.query('DELETE FROM users WHERE id = $1', [id])
+    await pool.query('DELETE FROM users WHERE id = $1', [userId])
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[/api/users DELETE]', err)

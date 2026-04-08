@@ -110,3 +110,20 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.switchText {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+  text-align: center;
+}
+
+.switchBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  text-decoration: underline;
+}

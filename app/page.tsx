@@ -33,9 +33,9 @@ function AppContent() {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
-  function handleSelectUser(u: User | null) {
+  function handleUpdateUser(u: User) {
     setUser(u)
-    if (u) setShowUserModal(false)
+    setShowUserModal(false)
   }
 
   function handleAnalyzed() {
@@ -46,13 +46,22 @@ function AppContent() {
     ? (user.berat_badan / Math.pow(user.tinggi_badan / 100, 2)).toFixed(1)
     : null
 
+  // Tampilkan loading sementara user dari session belum dimuat
+  if (!user) {
+    return (
+      <main className={styles.main} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid var(--border2)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      </main>
+    )
+  }
+
   return (
     <main className={styles.main}>
-      {(!user || showUserModal) && (
+      {showUserModal && (
         <UserModal
-          onSelect={handleSelectUser}
+          onUpdate={handleUpdateUser}
           currentUser={user}
-          onClose={user ? () => setShowUserModal(false) : undefined}
+          onClose={() => setShowUserModal(false)}
         />
       )}
 
@@ -71,20 +80,18 @@ function AppContent() {
           </button>
         </div>
 
-        {user && (
-          <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
-            <div className={styles.userPillAvatar}>{user.nama[0]?.toUpperCase() ?? '?'}</div>
-            <div className={styles.userPillInfo}>
-              <span className={styles.userPillName}>{user.nama}</span>
-              <span className={styles.userPillMeta}>
-                {user.berat_badan > 0 && `${user.berat_badan}kg`}
-                {bmi && ` · BMI ${bmi}`}
-                {` · ${user.target_kalori} kkal`}
-              </span>
-            </div>
-            <span className={styles.userPillEdit}>✏️</span>
-          </button>
-        )}
+        <button className={styles.userPill} onClick={() => setShowUserModal(true)}>
+          <div className={styles.userPillAvatar}>{user.nama[0]?.toUpperCase() ?? '?'}</div>
+          <div className={styles.userPillInfo}>
+            <span className={styles.userPillName}>{user.nama}</span>
+            <span className={styles.userPillMeta}>
+              {user.berat_badan > 0 && `${user.berat_badan}kg`}
+              {bmi && ` · BMI ${bmi}`}
+              {` · ${user.target_kalori} kkal`}
+            </span>
+          </div>
+          <span className={styles.userPillEdit}>✏️</span>
+        </button>
       </header>
 
       <DailyProgress user={user} refreshKey={refreshKey} />

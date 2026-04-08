@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     await initDB()
 
+    const userId = parseInt(req.headers.get('x-user-id') || '0') || null
     const body = await req.json()
     const {
       kategori = 'Makanan',
@@ -26,7 +27,6 @@ export async function POST(req: NextRequest) {
       santan,
       manis,
       suhu,
-      user_id,
     } = body
 
     const nama = String(body.nama ?? '').trim().slice(0, 200)
@@ -190,13 +190,13 @@ Kembalikan HANYA JSON valid, tanpa teks lain, tanpa markdown:
         `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [
-          user_id || null, parsed.nama, parsed.porsi, parsed.total_kalori,
+          userId, parsed.nama, parsed.porsi, parsed.total_kalori,
           parsed.protein_g, parsed.karbo_g, parsed.lemak_g,
           JSON.stringify(parsed.items), parsed.saran, target_kalori, keterangan,
           parsed.confidence || 'medium', true
         ]
       )
-      if (user_id) await updateStreak(user_id, client)
+      if (userId) await updateStreak(userId, client)
       return r.rows[0]
     })
 

@@ -6,13 +6,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     await initDB()
-    const rawUserId = req.nextUrl.searchParams.get('user_id')
-    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
-    if (!user_id) return NextResponse.json({ success: true, data: [] })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ success: true, data: [] })
 
     const result = await pool.query(
       `SELECT * FROM food_favorites WHERE user_id = $1 ORDER BY created_at DESC`,
-      [user_id]
+      [userId]
     )
     return NextResponse.json({ success: true, data: result.rows })
   } catch (err) {
@@ -24,19 +23,21 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await initDB()
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
-    const user_id = parseInt(body.user_id)
     const nama = String(body.nama ?? '').trim().slice(0, 255)
     const { porsi, total_kalori, protein_g, karbo_g, lemak_g, items } = body
 
-    if (!user_id || isNaN(user_id) || !nama) {
+    if (!nama) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
     }
 
     // Cek duplikat
     const existing = await pool.query(
       `SELECT id FROM food_favorites WHERE user_id = $1 AND nama = $2`,
-      [user_id, nama]
+      [userId, nama]
     )
     if (existing.rows.length > 0) {
       return NextResponse.json({ success: true, data: existing.rows[0], duplicate: true })
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     const result = await pool.query(
       `INSERT INTO food_favorites (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, JSON.stringify(items || [])]
+      [userId, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, JSON.stringify(items || [])]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {

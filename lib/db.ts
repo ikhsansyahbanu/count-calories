@@ -41,6 +41,7 @@ async function _runMigrations() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aktivitas VARCHAR(20) DEFAULT 'moderate'`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_log_date DATE`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`)
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS food_logs (

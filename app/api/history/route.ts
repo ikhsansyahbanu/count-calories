@@ -8,8 +8,7 @@ export async function GET(req: NextRequest) {
     await initDB()
     const { searchParams } = new URL(req.url)
 
-    const rawUserId = searchParams.get('user_id')
-    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
+    const userId = parseInt(req.headers.get('x-user-id') || '0') || null
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')))
     const offset = (page - 1) * limit
@@ -20,9 +19,9 @@ export async function GET(req: NextRequest) {
     const conditions: string[] = ['1=1']
     const params: (string | number)[] = []
 
-    if (user_id) {
-      params.push(user_id)
-      conditions.push(`user_id = $${params.length}`)
+    if (userId) {
+      params.push(userId)
+      conditions.push(`userId = $${params.length}`)
     }
     if (date) {
       params.push(date)
@@ -75,7 +74,8 @@ export async function PATCH(req: NextRequest) {
     const nama = String(body.nama ?? '').trim().slice(0, 255)
     if (!id || isNaN(id) || !nama) return NextResponse.json({ error: 'ID dan nama wajib diisi' }, { status: 400 })
 
-    await pool.query('UPDATE food_logs SET nama = $1 WHERE id = $2', [nama, id])
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    await pool.query('UPDATE food_logs SET nama = $1 WHERE id = $2 AND user_id = $3', [nama, id, userId])
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[/api/history PATCH]', err)
@@ -91,7 +91,8 @@ export async function DELETE(req: NextRequest) {
     const id = rawId && /^\d+$/.test(rawId) ? parseInt(rawId) : null
     if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })
 
-    await pool.query('DELETE FROM food_logs WHERE id = $1', [id])
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    await pool.query('DELETE FROM food_logs WHERE id = $1 AND user_id = $2', [id, userId])
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[/api/history DELETE]', err)

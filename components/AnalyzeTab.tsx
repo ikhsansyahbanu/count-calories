@@ -58,7 +58,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   async function loadFavorites() {
     if (!user?.id) return
     try {
-      const res = await fetch(`/api/favorites?user_id=${user.id}`)
+      const res = await fetch(`/api/favorites`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) setFavorites(json.data)
@@ -77,7 +77,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: user.id,
           nama: result.nama,
           porsi: result.porsi,
           total_kalori: result.total_kalori,
@@ -128,7 +127,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const res = await fetch('/api/favorites/relog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ favorite_id: fav.id, user_id: user?.id, keterangan, target_kalori: target }),
+        body: JSON.stringify({ favorite_id: fav.id, keterangan, target_kalori: target }),
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal log ulang favorit.')
@@ -220,7 +219,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan, user_id: user?.id }),
+        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, target_kalori: target, keterangan }),
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal menganalisis foto.')
@@ -252,7 +251,6 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           suhu: manualSuhu,
           target_kalori: target,
           keterangan,
-          user_id: user?.id,
         }),
       })
       const json = await res.json()

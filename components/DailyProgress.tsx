@@ -25,7 +25,7 @@ export default function DailyProgress({ user, refreshKey }: { user: User | null;
       return
     }
     setLoading(true)
-    fetch(`/api/today?user_id=${user.id}`)
+    fetch(`/api/today`)
       .then(r => r.json())
       .then(json => {
         if (json.success) setData(json.data)

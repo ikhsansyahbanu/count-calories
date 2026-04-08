@@ -7,12 +7,9 @@ export async function GET(req: NextRequest) {
   try {
     await initDB()
 
-    const { searchParams } = new URL(req.url)
-    const rawUserId = searchParams.get('user_id')
-    const user_id = rawUserId && /^\d+$/.test(rawUserId) ? rawUserId : null
-
-    if (!user_id) {
-      return NextResponse.json({ error: 'user_id diperlukan' }, { status: 400 })
+    const userId = parseInt(req.headers.get('x-user-id') || '0')
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const logsRes = await pool.query(
@@ -26,12 +23,12 @@ export async function GET(req: NextRequest) {
        FROM food_logs
        WHERE DATE(created_at AT TIME ZONE 'Asia/Jakarta') = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
          AND user_id = $1`,
-      [user_id]
+      [userId]
     )
 
     const streakRes = await pool.query(
       `SELECT streak FROM users WHERE id = $1`,
-      [user_id]
+      [userId]
     )
 
     const data = logsRes.rows[0]

@@ -64,7 +64,6 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
       const params = new URLSearchParams()
       params.set('page', String(page))
       params.set('limit', String(PAGE_SIZE))
-      if (user?.id) params.set('user_id', String(user.id))
       if (searchQuery) params.set('search', searchQuery)
       if (activeFilter !== 'Semua') params.set('keterangan', activeFilter)
 

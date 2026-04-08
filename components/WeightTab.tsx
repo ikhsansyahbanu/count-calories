@@ -23,7 +23,7 @@ export default function WeightTab({ user }: { user: User | null }) {
     if (!user?.id) { setLoading(false); return }
     setLoading(true)
     try {
-      const res = await fetch(`/api/weight?user_id=${user.id}`)
+      const res = await fetch(`/api/weight`)
       const json = await res.json()
       if (json.success) setLogs(json.data)
     } finally {
@@ -42,7 +42,7 @@ export default function WeightTab({ user }: { user: User | null }) {
       const res = await fetch('/api/weight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id, berat: val, catatan })
+        body: JSON.stringify({ berat: val, catatan })
       })
       const json = await res.json()
       if (json.success) {

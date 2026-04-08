@@ -13,20 +13,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<User | null>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem('kalori_user')
-    if (saved) {
-      try {
-        setUserState(JSON.parse(saved))
-      } catch {
-        localStorage.removeItem('kalori_user')
-      }
-    }
+    // Load user dari session (bukan localStorage)
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.authenticated && data.user) setUserState(data.user)
+      })
+      .catch(() => {})
   }, [])
 
   function setUser(u: User | null) {
     setUserState(u)
-    if (u) localStorage.setItem('kalori_user', JSON.stringify(u))
-    else localStorage.removeItem('kalori_user')
   }
 
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>

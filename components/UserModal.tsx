@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { User } from '@/lib/types'
 import styles from './UserModal.module.css'
 
 interface Props {
-  onSelect: (user: User | null) => void
-  currentUser: User | null
-  onClose?: () => void
+  onUpdate: (user: User) => void
+  currentUser: User
+  onClose: () => void
 }
 
 type Aktivitas = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
@@ -35,27 +35,21 @@ function hitungTDEE(berat: number, tinggi: number, usia: number, gender: string,
   return Math.round(bmr * AKTIVITAS_MULTIPLIER[aktivitas])
 }
 
-const emptyForm = { nama: '', berat_badan: '', tinggi_badan: '', usia: '', jenis_kelamin: 'laki-laki', aktivitas: 'moderate' as Aktivitas, target_kalori: '2000' }
-
-export default function UserModal({ onSelect, currentUser, onClose }: Props) {
-  const [users, setUsers] = useState<User[]>([])
-  const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list')
-  const [loading, setLoading] = useState(true)
+export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
-  const [form, setForm] = useState(emptyForm)
-  const [editUser, setEditUser] = useState<User | null>(null)
-  const [confirmSwitch, setConfirmSwitch] = useState<User | null>(null)
-
-  useEffect(() => { loadUsers() }, [])
-
-  async function loadUsers() {
-    setLoading(true)
-    const res = await fetch('/api/users')
-    const json = await res.json()
-    if (json.success) setUsers(json.data)
-    setLoading(false)
-  }
+  const [form, setForm] = useState({
+    nama: currentUser.nama,
+    berat_badan: String(currentUser.berat_badan || ''),
+    tinggi_badan: String(currentUser.tinggi_badan || ''),
+    usia: String(currentUser.usia || ''),
+    jenis_kelamin: currentUser.jenis_kelamin || 'laki-laki',
+    aktivitas: (currentUser.aktivitas as Aktivitas) || 'moderate',
+    target_kalori: String(currentUser.target_kalori),
+    password: '',
+    confirmPassword: '',
+  })
+  const [error, setError] = useState('')
 
   const tdee = hitungTDEE(
     parseFloat(form.berat_badan),
@@ -69,88 +63,47 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
     if (tdee) setForm(f => ({ ...f, target_kalori: String(tdee) }))
   }
 
-  async function createUser() {
-    if (!form.nama.trim() || submittingRef.current) return
-    submittingRef.current = true
-    setSubmitting(true)
-    try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nama: form.nama.trim(),
-          berat_badan: parseFloat(form.berat_badan) || 0,
-          tinggi_badan: parseFloat(form.tinggi_badan) || 0,
-          usia: parseInt(form.usia) || 0,
-          jenis_kelamin: form.jenis_kelamin,
-          aktivitas: form.aktivitas,
-          target_kalori: parseInt(form.target_kalori) || 2000
-        })
-      })
-      const json = await res.json()
-      if (json.success) { onSelect(json.data); onClose?.() }
-    } finally {
-      submittingRef.current = false
-      setSubmitting(false)
-    }
-  }
-
   async function saveEdit() {
-    if (!editUser || !form.nama.trim() || submittingRef.current) return
+    if (!form.nama.trim() || submittingRef.current) return
+    if (form.password && form.password !== form.confirmPassword) {
+      setError('Konfirmasi password tidak cocok')
+      return
+    }
+    if (form.password && form.password.length < 6) {
+      setError('Password baru minimal 6 karakter')
+      return
+    }
     submittingRef.current = true
     setSubmitting(true)
+    setError('')
     try {
+      const body: Record<string, unknown> = {
+        nama: form.nama.trim(),
+        berat_badan: parseFloat(form.berat_badan) || 0,
+        tinggi_badan: parseFloat(form.tinggi_badan) || 0,
+        usia: parseInt(form.usia) || 0,
+        jenis_kelamin: form.jenis_kelamin,
+        aktivitas: form.aktivitas,
+        target_kalori: parseInt(form.target_kalori) || 2000,
+      }
+      if (form.password) body.password = form.password
+
       const res = await fetch('/api/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editUser.id,
-          nama: form.nama.trim(),
-          berat_badan: parseFloat(form.berat_badan) || 0,
-          tinggi_badan: parseFloat(form.tinggi_badan) || 0,
-          usia: parseInt(form.usia) || 0,
-          jenis_kelamin: form.jenis_kelamin,
-          aktivitas: form.aktivitas,
-          target_kalori: parseInt(form.target_kalori) || 2000
-        })
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (json.success) {
-        if (currentUser?.id === editUser.id) onSelect(json.data)
-        setMode('list')
-        loadUsers()
+        onUpdate(json.data)
+        onClose()
+      } else {
+        setError(json.error || 'Gagal menyimpan')
       }
     } finally {
       submittingRef.current = false
       setSubmitting(false)
     }
-  }
-
-  async function deleteUser(id: number) {
-    await fetch(`/api/users?id=${id}`, { method: 'DELETE' })
-    setMode('list')
-    setEditUser(null)
-    await loadUsers()
-    if (currentUser?.id === id) onSelect(null)
-  }
-
-  function openEdit(u: User) {
-    setEditUser(u)
-    setForm({
-      nama: u.nama,
-      berat_badan: String(u.berat_badan || ''),
-      tinggi_badan: String(u.tinggi_badan || ''),
-      usia: String(u.usia || ''),
-      jenis_kelamin: u.jenis_kelamin || 'laki-laki',
-      aktivitas: (u.aktivitas as Aktivitas) || 'moderate',
-      target_kalori: String(u.target_kalori)
-    })
-    setMode('edit')
-  }
-
-  function openCreate() {
-    setForm(emptyForm)
-    setMode('create')
   }
 
   const bmi = form.berat_badan && form.tinggi_badan
@@ -166,183 +119,124 @@ export default function UserModal({ onSelect, currentUser, onClose }: Props) {
 
   return (
     <div className={styles.overlay}>
-      {confirmSwitch && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmBox}>
-            <div className={styles.confirmIcon}>🔄</div>
-            <div className={styles.confirmTitle}>Pindah profil?</div>
-            <div className={styles.confirmFrom}>
-              <span>{currentUser?.nama}</span>
-              <span className={styles.confirmArrow}>→</span>
-              <span>{confirmSwitch.nama}</span>
-            </div>
-            <div className={styles.confirmDesc}>Riwayat dan ringkasan akan berganti ke profil {confirmSwitch.nama}.</div>
-            <div className={styles.confirmBtns}>
-              <button className={styles.confirmCancel} onClick={() => setConfirmSwitch(null)}>Batal</button>
-              <button className={styles.confirmSwitch} onClick={() => { onSelect(confirmSwitch); setConfirmSwitch(null); onClose?.() }}>Pindah</button>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Edit Profil</h2>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.form}>
+          {/* Nama */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Nama</label>
+            <input className={styles.input} placeholder="Nama kamu" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))} />
+          </div>
+
+          {/* Jenis Kelamin */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Jenis Kelamin</label>
+            <div className={styles.genderRow}>
+              {['laki-laki', 'perempuan'].map(g => (
+                <button key={g} type="button"
+                  className={`${styles.genderBtn} ${form.jenis_kelamin === g ? styles.genderBtnActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, jenis_kelamin: g }))}>
+                  {g === 'laki-laki' ? '👨 Laki-laki' : '👩 Perempuan'}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
 
-      <div className={styles.modal}>
-        {mode === 'list' && (
-          <>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Pilih Profil</h2>
-              {currentUser && onClose && (
-                <button className={styles.closeBtn} onClick={onClose}>✕</button>
-              )}
+          {/* Berat, Tinggi, Usia */}
+          <div className={styles.formRow3}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Berat (kg)</label>
+              <input className={styles.input} type="number" placeholder="0" value={form.berat_badan} onChange={e => setForm(f => ({ ...f, berat_badan: e.target.value }))} />
             </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Tinggi (cm)</label>
+              <input className={styles.input} type="number" placeholder="0" value={form.tinggi_badan} onChange={e => setForm(f => ({ ...f, tinggi_badan: e.target.value }))} />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Usia</label>
+              <input className={styles.input} type="number" placeholder="0" value={form.usia} onChange={e => setForm(f => ({ ...f, usia: e.target.value }))} />
+            </div>
+          </div>
 
-            {loading ? (
-              <div className={styles.loading}><div className={styles.spinner} /></div>
-            ) : users.length === 0 ? (
-              <div className={styles.empty}>
-                <div className={styles.emptyIcon}>👤</div>
-                <p>Belum ada profil</p>
-                <span>Buat profil untuk mulai tracking</span>
+          {/* BMI */}
+          {bmi && bmiCategory && (
+            <div className={styles.bmiBox}>
+              <div>
+                <div className={styles.bmiLabel}>BMI</div>
+                <div className={styles.bmiVal} style={{ color: bmiCategory.color }}>{bmi}</div>
               </div>
-            ) : (
-              <div className={styles.userList}>
-                {users.map(u => {
-                  const bmiVal = u.berat_badan && u.tinggi_badan
-                    ? (u.berat_badan / Math.pow(u.tinggi_badan / 100, 2)).toFixed(1)
-                    : null
-                  return (
-                    <div key={u.id}
-                      className={`${styles.userCard} ${currentUser?.id === u.id ? styles.userCardActive : ''}`}
-                      onClick={() => { if (currentUser && currentUser.id !== u.id) setConfirmSwitch(u); else { onSelect(u); onClose?.() } }}>
-                      <div className={styles.userAvatar}>{u.nama[0]?.toUpperCase() ?? '?'}</div>
-                      <div className={styles.userInfo}>
-                        <div className={styles.userName}>{u.nama}</div>
-                        <div className={styles.userMeta}>
-                          {u.berat_badan > 0 && <span>{u.berat_badan} kg</span>}
-                          {bmiVal && <span>BMI {bmiVal}</span>}
-                          <span>Target {u.target_kalori} kkal</span>
-                        </div>
-                      </div>
-                      <button className={styles.editUserBtn} onClick={e => { e.stopPropagation(); openEdit(u) }}>✏️</button>
-                    </div>
-                  )
-                })}
+              <div className={styles.bmiDivider} />
+              <div className={styles.bmiCatBox}>
+                <div className={styles.bmiCatLabel}>Kategori</div>
+                <div className={styles.bmiCat} style={{ color: bmiCategory.color }}>{bmiCategory.label}</div>
               </div>
+            </div>
+          )}
+
+          {/* Aktivitas */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Tingkat Aktivitas</label>
+            <div className={styles.aktivitasList}>
+              {(Object.keys(AKTIVITAS_LABELS) as Aktivitas[]).map(a => (
+                <button key={a} type="button"
+                  className={`${styles.aktivitasBtn} ${form.aktivitas === a ? styles.aktivitasBtnActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, aktivitas: a }))}>
+                  {AKTIVITAS_LABELS[a]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* TDEE recommendation */}
+          {tdee && (
+            <div className={styles.tdeeBox}>
+              <div className={styles.tdeeInfo}>
+                <div className={styles.tdeeLabel}>Saran kalori harian (Harris-Benedict)</div>
+                <div className={styles.tdeeVal}>{tdee} kkal/hari</div>
+                <div className={styles.tdeeSub}>Berdasarkan berat, tinggi, usia & aktivitasmu</div>
+              </div>
+              <button type="button" className={styles.tdeeApply} onClick={applyTDEE}>Pakai</button>
+            </div>
+          )}
+
+          {/* Target kalori */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Target Kalori per Hari</label>
+            <div className={styles.targetQuick}>
+              {[1500, 1800, 2000, 2200, 2500].map(k => (
+                <button key={k} type="button"
+                  className={`${styles.targetChip} ${form.target_kalori === String(k) ? styles.targetChipActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, target_kalori: String(k) }))}>
+                  {k}
+                </button>
+              ))}
+            </div>
+            <input className={styles.input} type="number" value={form.target_kalori}
+              onChange={e => setForm(f => ({ ...f, target_kalori: e.target.value }))} />
+          </div>
+
+          {/* Ganti Password (opsional) */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Ganti Password <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(opsional)</span></label>
+            <input className={styles.input} type="password" placeholder="Password baru (min 6 karakter)"
+              value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+            {form.password && (
+              <input className={styles.input} type="password" placeholder="Konfirmasi password baru"
+                value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                style={{ marginTop: '0.5rem' }} />
             )}
-            <button className={styles.createBtn} onClick={openCreate}>+ Buat Profil Baru</button>
-          </>
-        )}
+          </div>
 
-        {(mode === 'create' || mode === 'edit') && (
-          <>
-            <div className={styles.modalHeader}>
-              <button className={styles.backBtn} onClick={() => setMode('list')}>← Kembali</button>
-              <h2 className={styles.modalTitle}>{mode === 'create' ? 'Profil Baru' : 'Edit Profil'}</h2>
-            </div>
+          {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
 
-            <div className={styles.form}>
-              {/* Nama */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Nama</label>
-                <input className={styles.input} placeholder="Nama kamu" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))} />
-              </div>
-
-              {/* Jenis Kelamin */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Jenis Kelamin</label>
-                <div className={styles.genderRow}>
-                  {['laki-laki', 'perempuan'].map(g => (
-                    <button key={g} type="button"
-                      className={`${styles.genderBtn} ${form.jenis_kelamin === g ? styles.genderBtnActive : ''}`}
-                      onClick={() => setForm(f => ({ ...f, jenis_kelamin: g }))}>
-                      {g === 'laki-laki' ? '👨 Laki-laki' : '👩 Perempuan'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Berat, Tinggi, Usia */}
-              <div className={styles.formRow3}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Berat (kg)</label>
-                  <input className={styles.input} type="number" placeholder="0" value={form.berat_badan} onChange={e => setForm(f => ({ ...f, berat_badan: e.target.value }))} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Tinggi (cm)</label>
-                  <input className={styles.input} type="number" placeholder="0" value={form.tinggi_badan} onChange={e => setForm(f => ({ ...f, tinggi_badan: e.target.value }))} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Usia</label>
-                  <input className={styles.input} type="number" placeholder="0" value={form.usia} onChange={e => setForm(f => ({ ...f, usia: e.target.value }))} />
-                </div>
-              </div>
-
-              {/* BMI */}
-              {bmi && bmiCategory && (
-                <div className={styles.bmiBox}>
-                  <div>
-                    <div className={styles.bmiLabel}>BMI</div>
-                    <div className={styles.bmiVal} style={{ color: bmiCategory.color }}>{bmi}</div>
-                  </div>
-                  <div className={styles.bmiDivider} />
-                  <div className={styles.bmiCatBox}>
-                    <div className={styles.bmiCatLabel}>Kategori</div>
-                    <div className={styles.bmiCat} style={{ color: bmiCategory.color }}>{bmiCategory.label}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Aktivitas */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Tingkat Aktivitas</label>
-                <div className={styles.aktivitasList}>
-                  {(Object.keys(AKTIVITAS_LABELS) as Aktivitas[]).map(a => (
-                    <button key={a} type="button"
-                      className={`${styles.aktivitasBtn} ${form.aktivitas === a ? styles.aktivitasBtnActive : ''}`}
-                      onClick={() => setForm(f => ({ ...f, aktivitas: a }))}>
-                      {AKTIVITAS_LABELS[a]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* TDEE recommendation */}
-              {tdee && (
-                <div className={styles.tdeeBox}>
-                  <div className={styles.tdeeInfo}>
-                    <div className={styles.tdeeLabel}>Saran kalori harian (Harris-Benedict)</div>
-                    <div className={styles.tdeeVal}>{tdee} kkal/hari</div>
-                    <div className={styles.tdeeSub}>Berdasarkan berat, tinggi, usia & aktivitasmu</div>
-                  </div>
-                  <button type="button" className={styles.tdeeApply} onClick={applyTDEE}>Pakai</button>
-                </div>
-              )}
-
-              {/* Target kalori */}
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Target Kalori per Hari</label>
-                <div className={styles.targetQuick}>
-                  {[1500, 1800, 2000, 2200, 2500].map(k => (
-                    <button key={k} type="button"
-                      className={`${styles.targetChip} ${form.target_kalori === String(k) ? styles.targetChipActive : ''}`}
-                      onClick={() => setForm(f => ({ ...f, target_kalori: String(k) }))}>
-                      {k}
-                    </button>
-                  ))}
-                </div>
-                <input className={styles.input} type="number" value={form.target_kalori}
-                  onChange={e => setForm(f => ({ ...f, target_kalori: e.target.value }))} />
-              </div>
-
-              <button className={styles.saveBtn} onClick={mode === 'create' ? createUser : saveEdit} disabled={!form.nama.trim() || submitting}>
-                {submitting ? 'Menyimpan...' : mode === 'create' ? 'Buat & Mulai' : 'Simpan Perubahan'}
-              </button>
-
-              {mode === 'edit' && editUser && (
-                <button className={styles.deleteUserBtn} onClick={() => deleteUser(editUser.id)}>Hapus Profil Ini</button>
-              )}
-            </div>
-          </>
-        )}
+          <button className={styles.saveBtn} onClick={saveEdit} disabled={!form.nama.trim() || submitting}>
+            {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -20,8 +20,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const userParam = user?.id ? `&user_id=${user.id}` : ''
-      const res = await fetch(`/api/summary?days=${days}${userParam}`)
+      const res = await fetch(`/api/summary?days=${days}`)
       const json = await res.json()
       if (json.success) setData(json.data.reverse())
     } finally {
