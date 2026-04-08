@@ -136,7 +136,7 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
           <div className={styles.formGroup}>
             <label className={styles.label}>Jenis Kelamin</label>
             <div className={styles.genderRow}>
-              {['laki-laki', 'perempuan'].map(g => (
+              {(['laki-laki', 'perempuan'] as const).map(g => (
                 <button key={g} type="button"
                   className={`${styles.genderBtn} ${form.jenis_kelamin === g ? styles.genderBtnActive : ''}`}
                   onClick={() => setForm(f => ({ ...f, jenis_kelamin: g }))}>
