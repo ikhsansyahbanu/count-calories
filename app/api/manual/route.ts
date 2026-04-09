@@ -176,6 +176,16 @@ Kembalikan HANYA JSON valid, tanpa teks lain, tanpa markdown:
       return NextResponse.json({ error: 'AI mengembalikan data yang tidak valid' }, { status: 500 })
     }
 
+    // Recalculate total_kalori from items to ensure consistency with item breakdown
+    const items = Array.isArray(parsed.items) ? parsed.items : []
+    if (items.length > 0) {
+      const itemsTotal = items.reduce((sum: number, item: { kalori: number }) => sum + (Number(item.kalori) || 0), 0)
+      if (Math.abs(parsed.total_kalori - itemsTotal) > 20) {
+        console.warn('[Calorie mismatch manual]', { aiTotal: parsed.total_kalori, itemsTotal })
+      }
+      parsed.total_kalori = itemsTotal
+    }
+
     // Sanity check: macro calories should roughly match total (protein=4, karbo=4, lemak=9 kcal/g)
     const macroKcal = (parsed.protein_g ?? 0) * 4 + (parsed.karbo_g ?? 0) * 4 + (parsed.lemak_g ?? 0) * 9
     if (parsed.total_kalori > 0 && macroKcal > 0) {

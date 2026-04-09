@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { User } from '@/lib/types'
 import { getSaranList } from '@/lib/insights'
 import { getBrowserTimezone } from '@/lib/tz'
+import { getMacroTargets } from '@/lib/macros'
+import { computeTDEE, estimateWeeklyWeightChange } from '@/lib/utils'
 import styles from './DailyProgress.module.css'
 
 interface TodayData {
@@ -28,6 +30,11 @@ function getMealContext(): string {
 interface WeekInsight {
   type: 'warning' | 'danger' | 'good'
   text: string
+}
+
+const GOAL_BADGE: Record<string, string> = {
+  cutting: '✂️ Cutting',
+  bulking: '💪 Bulking',
 }
 
 export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSummary }: { user: User | null; refreshKey?: number; onStartLog?: () => void; onGoToSummary?: () => void }) {
@@ -64,7 +71,7 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
         const avgProtein = Math.round(days.reduce((s: number, d: { total_protein: number }) => s + Number(d.total_protein), 0) / days.length)
         const avgKarbo   = Math.round(days.reduce((s: number, d: { total_karbo: number }) => s + Number(d.total_karbo), 0) / days.length)
         const avgLemak   = Math.round(days.reduce((s: number, d: { total_lemak: number }) => s + Number(d.total_lemak), 0) / days.length)
-        const top = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, t)[0]
+        const top = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, t, user.goal)[0]
         if (top) setWeekInsight(top)
       })
       .catch(() => {})
@@ -87,6 +94,7 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
   const sisa = target - kalori
   const lebih = kalori - target
   const mealCtx = getMealContext()
+  const isCutting = user.goal === 'cutting'
 
   const statusConfig: Record<Status, { msg: string; msgClass: string; fillClass: string }> = {
     empty: { msg: '', msgClass: '', fillClass: styles.progressFillBlue },
@@ -96,12 +104,16 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
       fillClass: styles.progressFillBlue,
     },
     normal: {
-      msg: `On track! Sisa ${sisa.toLocaleString('id-ID')} kkal untuk ${mealCtx}`,
+      msg: isCutting
+        ? `On track cutting! Sisa ${sisa.toLocaleString('id-ID')} kkal`
+        : `On track! Sisa ${sisa.toLocaleString('id-ID')} kkal untuk ${mealCtx}`,
       msgClass: styles.statusGreen,
       fillClass: styles.progressFillGreen,
     },
     warning: {
-      msg: `Hampir limit — pilih ${mealCtx} ringan (buah, sup, atau salad)`,
+      msg: isCutting
+        ? `Hampir limit cutting — pilih protein tanpa lemak`
+        : `Hampir limit — pilih ${mealCtx} ringan (buah, sup, atau salad)`,
       msgClass: styles.statusAmber,
       fillClass: styles.progressFillAmber,
     },
@@ -117,9 +129,8 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
   const streak = data?.streak ?? 0
   const showStreak = streak >= 1
 
-  // Macro insight: which macro needs attention?
-  const proteinTarget = Math.round((target * 0.25) / 4)
-  const lemakTarget = Math.round((target * 0.25) / 9)
+  // Macro targets based on goal
+  const { proteinG: proteinTarget, lemakG: lemakTarget } = getMacroTargets(target, user.goal)
   const protein = data?.protein ?? 0
   const lemak = data?.lemak ?? 0
 
@@ -129,6 +140,15 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
     else if (lemak > lemakTarget * 1.3) macroHint = `Lemak ${lemak}g sudah tinggi — hindari gorengan berikutnya`
   }
 
+  // TDEE / target section for Phase 4G
+  const computedTDEE = computeTDEE(user)
+  const showTargetSection = !!(user.goal && computedTDEE)
+  const weeklyChange = showTargetSection && isCutting
+    ? estimateWeeklyWeightChange(computedTDEE!, target)
+    : null
+
+  const goalLabel = user.goal === 'cutting' ? 'Cutting' : user.goal === 'bulking' ? 'Bulking' : 'Maintain'
+
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
@@ -136,6 +156,11 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
           Hari ini{data && data.jumlah_makan > 0 ? ` · ${data.jumlah_makan}x makan` : ''}
         </span>
         <div className={styles.cardHeaderRight}>
+          {user.goal && user.goal !== 'maintain' && (
+            <span className={styles.goalBadge}>
+              {GOAL_BADGE[user.goal]}
+            </span>
+          )}
           {status !== 'empty' && (
             <span className={`${styles.statusBadge} ${styles[`badge_${status}`]}`}>
               {status === 'over' ? '✕ Over' : status === 'warning' ? '⚠ Hampir' : '✓ On Track'}
@@ -183,6 +208,19 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
               <span className={styles.kalUnit}> / {target.toLocaleString('id-ID')} kkal</span>
             </div>
           </div>
+
+          {showTargetSection && (
+            <div className={styles.targetSection}>
+              <div className={styles.targetMain}>🎯 Target: {target.toLocaleString('id-ID')} kkal ({goalLabel})</div>
+              <div className={styles.targetSub}>
+                Berdasarkan kebutuhan harianmu (TDEE {computedTDEE!.toLocaleString('id-ID')}
+                {user.goal === 'cutting' ? ' − 500' : user.goal === 'bulking' ? ' + 300' : ''})
+              </div>
+              {weeklyChange !== null && weeklyChange > 0 && (
+                <div className={styles.targetEst}>≈ Turun {weeklyChange} kg/minggu</div>
+              )}
+            </div>
+          )}
 
           <div className={styles.progressWrap}>
             <span className={styles.progressPct}>{pct}%</span>

@@ -268,3 +268,42 @@ button.weekInsightChip:hover { opacity: 0.85; }
   border-radius: 6px;
   animation: pulse 1.2s ease infinite;
 }
+
+.goalBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+
+.targetSection {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--accent);
+}
+
+.targetMain {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.targetSub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.targetEst {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 3px;
+}

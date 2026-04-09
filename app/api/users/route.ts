@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal
        FROM users WHERE id = $1`,
       [userId]
     )
@@ -45,7 +45,12 @@ function validateUserFields(body: Record<string, unknown>) {
     ? (body.aktivitas as string)
     : 'moderate'
 
-  return { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori }
+  const validGoal = ['cutting', 'bulking', 'maintain']
+  const goal = validGoal.includes(body.goal as string)
+    ? (body.goal as string)
+    : undefined
+
+  return { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, goal }
 }
 
 // POST /api/users — registrasi user baru (bisa diakses tanpa login — butuh password)
@@ -72,12 +77,12 @@ export async function POST(req: NextRequest) {
     }
 
     const password_hash = await bcrypt.hash(password, 12)
-    const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = validated
+    const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, goal } = validated
     const result = await pool.query(
-      `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak`,
-      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash]
+      `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, goal)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal`,
+      [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, goal ?? 'maintain']
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {
@@ -97,7 +102,7 @@ export async function PATCH(req: NextRequest) {
     const validated = validateUserFields(body)
     if ('error' in validated) return NextResponse.json({ error: validated.error }, { status: 400 })
 
-    const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori } = validated
+    const { nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, goal } = validated
 
     // Ganti password jika field password dikirim
     const newPassword = String(body.password ?? '').trim()
@@ -107,20 +112,20 @@ export async function PATCH(req: NextRequest) {
       }
       const password_hash = await bcrypt.hash(newPassword, 12)
       await pool.query(
-        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7, password_hash=$8
-         WHERE id=$9`,
-        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, userId]
+        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7, password_hash=$8, goal=COALESCE($9, goal)
+         WHERE id=$10`,
+        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, goal ?? null, userId]
       )
     } else {
       await pool.query(
-        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7
-         WHERE id=$8`,
-        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, userId]
+        `UPDATE users SET nama=$1, berat_badan=$2, tinggi_badan=$3, usia=$4, jenis_kelamin=$5, aktivitas=$6, target_kalori=$7, goal=COALESCE($8, goal)
+         WHERE id=$9`,
+        [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, goal ?? null, userId]
       )
     }
 
     const result = await pool.query(
-      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal
        FROM users WHERE id = $1`,
       [userId]
     )

@@ -1,13 +1,14 @@
 'use client'
 import { DaySummary } from '@/lib/types'
+import { getMacroTargets } from '@/lib/macros'
 import styles from './SummaryTab.module.css'
 
 export type MacroTab = 'protein' | 'karbo' | 'lemak'
 
-export const MACRO_CONFIG: Record<MacroTab, { label: string; color: string; unit: string; pct: number; kcalPerG: number }> = {
-  protein: { label: 'Protein', color: 'var(--teal)',  unit: 'g', pct: 0.25, kcalPerG: 4 },
-  karbo:   { label: 'Karbo',   color: 'var(--amber)', unit: 'g', pct: 0.50, kcalPerG: 4 },
-  lemak:   { label: 'Lemak',   color: 'var(--red)',   unit: 'g', pct: 0.25, kcalPerG: 9 },
+export const MACRO_CONFIG: Record<MacroTab, { label: string; color: string; unit: string }> = {
+  protein: { label: 'Protein', color: 'var(--teal)',  unit: 'g' },
+  karbo:   { label: 'Karbo',   color: 'var(--amber)', unit: 'g' },
+  lemak:   { label: 'Lemak',   color: 'var(--red)',   unit: 'g' },
 }
 
 const MACRO_KEY: Record<MacroTab, keyof DaySummary> = {
@@ -23,13 +24,17 @@ interface Props {
   onMacroTabChange: (tab: MacroTab) => void
   target: number
   days: number
+  goal?: string
 }
 
-export default function MacroChart({ data, daysWithData, macroTab, onMacroTabChange, target, days }: Props) {
+export default function MacroChart({ data, daysWithData, macroTab, onMacroTabChange, target, days, goal }: Props) {
   const cfg = MACRO_CONFIG[macroTab]
   const key = MACRO_KEY[macroTab]
+  const macroTargets = getMacroTargets(target, goal)
+  const macroTarget = macroTab === 'protein' ? macroTargets.proteinG
+    : macroTab === 'karbo' ? macroTargets.karboG
+    : macroTargets.lemakG
   const values = data.map(d => Number(d[key]) || 0)
-  const macroTarget = Math.round((target * cfg.pct) / cfg.kcalPerG)
   const maxVal = Math.max(...values, macroTarget)
   const avg = daysWithData.length > 0
     ? Math.round(daysWithData.map(d => Number(d[key]) || 0).reduce((s, v) => s + v, 0) / daysWithData.length)

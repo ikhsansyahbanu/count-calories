@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import { User } from '@/lib/types'
+import { getCalorieTarget } from '@/lib/utils'
 import styles from './UserModal.module.css'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 type Aktivitas = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+type Goal = 'cutting' | 'maintain' | 'bulking'
 
 const AKTIVITAS_LABELS: Record<Aktivitas, string> = {
   sedentary: 'Tidak aktif',
@@ -26,6 +28,12 @@ const AKTIVITAS_MULTIPLIER: Record<Aktivitas, number> = {
   active: 1.725,
   very_active: 1.9,
 }
+
+const GOAL_OPTIONS: { value: Goal; label: string }[] = [
+  { value: 'cutting', label: '✂️ Turun BB' },
+  { value: 'maintain', label: '⚖️ Jaga BB' },
+  { value: 'bulking', label: '💪 Naik BB' },
+]
 
 function hitungTDEE(berat: number, tinggi: number, usia: number, gender: string, aktivitas: Aktivitas): number | null {
   if (!berat || !tinggi || !usia) return null
@@ -45,6 +53,7 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
     usia: String(currentUser.usia || ''),
     jenis_kelamin: currentUser.jenis_kelamin || 'laki-laki',
     aktivitas: (currentUser.aktivitas as Aktivitas) || 'moderate',
+    goal: (currentUser.goal as Goal) ?? 'maintain',
     target_kalori: String(currentUser.target_kalori),
     password: '',
     confirmPassword: '',
@@ -59,8 +68,17 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
     form.aktivitas
   )
 
+  const tdeeAdjusted = tdee ? getCalorieTarget(tdee, form.goal) : null
+
+  function getTDEELabel(): string {
+    if (!tdee || !tdeeAdjusted) return ''
+    if (form.goal === 'cutting') return `Saran untuk Turun BB: ${tdeeAdjusted.toLocaleString('id-ID')} kkal (TDEE ${tdee.toLocaleString('id-ID')} − 500)`
+    if (form.goal === 'bulking') return `Saran untuk Naik BB: ${tdeeAdjusted.toLocaleString('id-ID')} kkal (TDEE ${tdee.toLocaleString('id-ID')} + 300)`
+    return `Saran untuk Jaga BB: ${tdeeAdjusted.toLocaleString('id-ID')} kkal (TDEE)`
+  }
+
   function applyTDEE() {
-    if (tdee) setForm(f => ({ ...f, target_kalori: String(tdee) }))
+    if (tdeeAdjusted) setForm(f => ({ ...f, target_kalori: String(tdeeAdjusted) }))
   }
 
   async function saveEdit() {
@@ -84,6 +102,7 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
         usia: parseInt(form.usia) || 0,
         jenis_kelamin: form.jenis_kelamin,
         aktivitas: form.aktivitas,
+        goal: form.goal,
         target_kalori: parseInt(form.target_kalori) || 2000,
       }
       if (form.password) body.password = form.password
@@ -191,13 +210,27 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
             </div>
           </div>
 
+          {/* Goal */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Tujuan</label>
+            <div className={styles.genderRow}>
+              {GOAL_OPTIONS.map(g => (
+                <button key={g.value} type="button"
+                  className={`${styles.genderBtn} ${form.goal === g.value ? styles.genderBtnActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, goal: g.value }))}>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* TDEE recommendation */}
-          {tdee && (
+          {tdee && tdeeAdjusted && (
             <div className={styles.tdeeBox}>
               <div className={styles.tdeeInfo}>
                 <div className={styles.tdeeLabel}>Saran kalori harian (Harris-Benedict)</div>
-                <div className={styles.tdeeVal}>{tdee} kkal/hari</div>
-                <div className={styles.tdeeSub}>Berdasarkan berat, tinggi, usia & aktivitasmu</div>
+                <div className={styles.tdeeVal}>{tdeeAdjusted.toLocaleString('id-ID')} kkal/hari</div>
+                <div className={styles.tdeeSub}>{getTDEELabel()}</div>
               </div>
               <button type="button" className={styles.tdeeApply} onClick={applyTDEE}>Pakai</button>
             </div>

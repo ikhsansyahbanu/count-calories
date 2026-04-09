@@ -8,6 +8,8 @@ export async function POST(req: NextRequest) {
   try {
     await initDB()
     const userId = parseInt(req.headers.get('x-user-id') || '0') || null
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const favorite_id = parseInt(body.favorite_id)
     const keterangan = String(body.keterangan ?? '').trim().slice(0, 100)
@@ -18,17 +20,18 @@ export async function POST(req: NextRequest) {
     }
 
     const fav = await pool.query(
-      `SELECT * FROM food_favorites WHERE id = $1`,
-      [favorite_id]
+      `SELECT * FROM food_favorites WHERE id = $1 AND user_id = $2`,
+      [favorite_id, userId]
     )
     if (fav.rows.length === 0) {
       return NextResponse.json({ error: 'Favorit tidak ditemukan' }, { status: 404 })
     }
 
+    console.log('[relog] userId:', userId, 'favorite_id:', favorite_id, 'fav:', fav.rows[0].nama)
     const f = fav.rows[0]
     const savedLog = await withTransaction(async (client) => {
       const r = await client.query(
-        `INSERT INTO food_logs (userId, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
+        `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [
           userId, f.nama, f.porsi, f.total_kalori,

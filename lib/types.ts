@@ -10,6 +10,7 @@ export interface User {
   created_at: string
   streak?: number
   last_log_date?: string
+  goal?: 'cutting' | 'bulking' | 'maintain'
 }
 
 export interface FoodLog {
@@ -58,6 +59,14 @@ export interface FoodFavorite {
   karbo_g: number
   lemak_g: number
   items: FoodItem[] | string
+  created_at: string
+}
+
+export interface WeightLog {
+  id: number
+  berat: number
+  catatan: string
+  waist_cm?: number | null
   created_at: string
 }
 

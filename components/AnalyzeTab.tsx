@@ -41,11 +41,15 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   const [showFavorites, setShowFavorites] = useState(false)
   const [savingFav, setSavingFav] = useState(false)
   const [savedFavId, setSavedFavId] = useState<number | null>(null)
+  const [savedFavIsDuplicate, setSavedFavIsDuplicate] = useState(false)
   const [reloggingFavId, setReloggingFavId] = useState<number | null>(null)
   const [loggedFavIds, setLoggedFavIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+    setIsMobile(
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    )
   }, [])
 
   useEffect(() => {
@@ -91,6 +95,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const json = await res.json()
       if (json.success) {
         setSavedFavId(json.data.id)
+        setSavedFavIsDuplicate(!!json.duplicate)
         if (!json.duplicate) setFavorites(prev => [json.data, ...prev])
       } else {
         setError(json.error || 'Gagal menyimpan favorit.')
@@ -230,14 +235,12 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     if (file?.type.startsWith('image/')) handleFile(file)
   }
 
-  function resetPhoto() {
+  function clearPhotoInput() {
     setImageBase64(null)
     setImagePreview(null)
-    setResult(null)
-    setError(null)
   }
 
-  function resetManual() {
+  function clearManualInput() {
     setManualNama('')
     setManualKategori('Makanan')
     setManualPorsi('Normal')
@@ -245,7 +248,21 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
     setManualSantan(false)
     setManualManis('Manis')
     setManualSuhu('Dingin')
+  }
+
+  function resetPhoto() {
+    clearPhotoInput()
     setResult(null)
+    setSavedFavId(null)
+    setSavedFavIsDuplicate(false)
+    setError(null)
+  }
+
+  function resetManual() {
+    clearManualInput()
+    setResult(null)
+    setSavedFavId(null)
+    setSavedFavIsDuplicate(false)
     setError(null)
   }
 
@@ -269,6 +286,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal menganalisis foto.')
       setResult(json.data)
+      setSavedFavId(null)
+      setSavedFavIsDuplicate(false)
+      clearPhotoInput()
       onAnalyzed?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menganalisis foto. Coba lagi dengan foto yang lebih jelas.')
@@ -301,6 +321,9 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
       const json = await res.json()
       if (!json.success) throw new Error(json.error || 'Gagal mengestimasi kalori.')
       setResult(json.data)
+      setSavedFavId(null)
+      setSavedFavIsDuplicate(false)
+      clearManualInput()
       onAnalyzed?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengestimasi kalori. Coba lagi.')
@@ -426,6 +449,7 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           user={user}
           inputMode={inputMode}
           savedFavId={savedFavId}
+          savedFavIsDuplicate={savedFavIsDuplicate}
           savingFav={savingFav}
           onSaveFavorite={saveFavorite}
           onDeleteFavorite={deleteFavorite}

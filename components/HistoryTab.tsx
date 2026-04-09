@@ -185,7 +185,7 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
             <div className={styles.confirmIcon}>🗑️</div>
             <div className={styles.confirmTitle}>Hapus item ini?</div>
             <div className={styles.confirmNama}>{confirmDeleteNama}</div>
-            <div className={styles.confirmDesc}>Data yang dihapus tidak bisa dikembalikan.</div>
+            <div className={styles.confirmDesc}>Log ini akan dihapus. Favorit yang sudah disimpan dari makanan ini tidak terpengaruh.</div>
             <div className={styles.confirmBtns}>
               <button className={styles.confirmCancel} onClick={() => setConfirmDeleteId(null)}>Batal</button>
               <button className={styles.confirmDelete} onClick={() => deleteLog(confirmDeleteId)}>Hapus</button>

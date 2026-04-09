@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { DaySummary, User } from '@/lib/types'
+import { DaySummary, User, WeightLog } from '@/lib/types'
 import { getBrowserTimezone } from '@/lib/tz'
 import MacroChart, { MacroTab } from './MacroChart'
-import { getSaranList } from '@/lib/insights'
+import { getSaranList, getWeightInsight, SaranItem } from '@/lib/insights'
 import styles from './SummaryTab.module.css'
 
 export default function SummaryTab({ user }: { user: User | null }) {
@@ -12,6 +12,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const [days, setDays] = useState(7)
   const [macroTab, setMacroTab] = useState<MacroTab>('protein')
   const [showMacroChart, setShowMacroChart] = useState(false)
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -47,6 +48,15 @@ export default function SummaryTab({ user }: { user: User | null }) {
   }, [days, user?.id, user?.target_kalori])
 
   useEffect(() => { load() }, [load])
+
+  // Fetch weight logs for trend analysis (Phase 4E)
+  useEffect(() => {
+    if (!user?.id) return
+    fetch(`/api/weight?limit=14`)
+      .then(r => r.json())
+      .then(json => { if (json.success) setWeightLogs(json.data) })
+      .catch(() => {})
+  }, [user?.id])
 
   if (loading) return (
     <div className={styles.wrap}>
@@ -92,7 +102,17 @@ export default function SummaryTab({ user }: { user: User | null }) {
   const target = data[data.length - 1]?.target_kalori || user?.target_kalori || 2000
   const maxKal = Math.max(...data.map(d => d.total_kalori), target)
 
-  const saranList = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, target)
+  // Weight trend for insight (Phase 4E)
+  let weightInsight: SaranItem | null = null
+  if (weightLogs.length >= 2 && user?.goal) {
+    const latest = parseFloat(String(weightLogs[0].berat))
+    const oldest = parseFloat(String(weightLogs[weightLogs.length - 1].berat))
+    const weightDelta = latest - oldest
+    weightInsight = getWeightInsight(weightDelta, user.goal)
+  }
+
+  const saranList = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, target, user?.goal)
+  const fullSaranList: SaranItem[] = weightInsight ? [weightInsight, ...saranList] : saranList
 
   return (
     <div className={styles.wrap}>
@@ -136,7 +156,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
       {/* Saran */}
       <div className={styles.saranCard}>
         <div className={styles.chartTitle}>Langkah Selanjutnya</div>
-        {saranList.map((s, i) => (
+        {fullSaranList.map((s, i) => (
           <div key={i} className={`${styles.saranItem} ${styles[s.type]}`}>
             <span className={styles.saranIcon}>
               {s.type === 'good' ? '✅' : s.type === 'warning' ? '⚠️' : '🚨'}
@@ -200,6 +220,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
               onMacroTabChange={setMacroTab}
               target={target}
               days={days}
+              goal={user?.goal}
             />
           </div>
         )}

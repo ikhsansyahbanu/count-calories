@@ -214,6 +214,7 @@
 .logRight { display: flex; align-items: center; gap: 10px; }
 .logBerat { font-size: 1rem; font-weight: 700; color: var(--text); }
 .logBerat span { font-size: 0.75rem; color: var(--muted); }
+.logWaist { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
 .logDiff { font-size: 0.75rem; font-weight: 700; }
 .deleteBtn {
   background: none;
@@ -225,6 +226,16 @@
   transition: color 0.2s, background 0.2s;
 }
 .deleteBtn:hover { color: var(--red); background: var(--red-light); }
+
+.waistInsight {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
 
 .overlay {
   position: fixed; inset: 0;

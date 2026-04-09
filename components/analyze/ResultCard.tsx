@@ -1,5 +1,6 @@
 'use client'
 import { FoodLog, User } from '@/lib/types'
+import { parseItems } from '@/lib/utils'
 import styles from '../AnalyzeTab.module.css'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
   user: User | null
   inputMode: 'foto' | 'manual'
   savedFavId: number | null
+  savedFavIsDuplicate: boolean
   savingFav: boolean
   onSaveFavorite: () => void
   onDeleteFavorite: (id: number) => void
@@ -16,15 +18,11 @@ interface Props {
 
 export default function ResultCard({
   result, target, user, inputMode,
-  savedFavId, savingFav,
+  savedFavId, savedFavIsDuplicate, savingFav,
   onSaveFavorite, onDeleteFavorite, onReset,
 }: Props) {
   const pct = Math.round((result.total_kalori / target) * 100)
-  const items: { nama: string; kalori: number }[] = result.items
-    ? (typeof result.items === 'string'
-        ? (() => { try { return JSON.parse(result.items as string) } catch { return [] } })()
-        : result.items)
-    : []
+  const items = parseItems(result.items)
 
   return (
     <div className={styles.resultCard}>
@@ -35,13 +33,19 @@ export default function ResultCard({
             <div className={styles.resultPortion}>{result.porsi}</div>
           </div>
           {user && (
-            <button
-              className={`${styles.favBtn} ${savedFavId ? styles.favBtnSaved : ''}`}
-              onClick={savedFavId ? () => onDeleteFavorite(savedFavId) : onSaveFavorite}
-              disabled={savingFav}
-            >
-              {savedFavId ? '⭐' : '☆'}
-            </button>
+            <div className={styles.favBtnWrap}>
+              <button
+                className={`${styles.favBtn} ${savedFavId ? styles.favBtnSaved : ''}`}
+                onClick={savedFavId && !savedFavIsDuplicate ? () => onDeleteFavorite(savedFavId) : !savedFavId ? onSaveFavorite : undefined}
+                disabled={savingFav || savedFavIsDuplicate}
+                title={savedFavIsDuplicate ? 'Sudah ada di favorit' : savedFavId ? 'Hapus dari favorit' : 'Simpan ke favorit'}
+              >
+                {savingFav ? '...' : savedFavId ? '⭐' : '☆'}
+              </button>
+              {savedFavIsDuplicate && (
+                <div className={styles.favDuplicateHint}>Sudah ada</div>
+              )}
+            </div>
           )}
         </div>
         {result.confidence && (

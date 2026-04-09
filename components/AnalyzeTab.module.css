@@ -509,3 +509,5 @@
 }
 .favBtn:hover { background: rgba(255,255,255,0.25); }
 .favBtnSaved { background: rgba(255,220,50,0.2); border-color: rgba(255,220,50,0.5); }
+.favBtnWrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.favDuplicateHint { font-size: 0.6rem; color: rgba(255,255,255,0.5); white-space: nowrap; }

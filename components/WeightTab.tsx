@@ -1,23 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { User } from '@/lib/types'
+import { User, WeightLog } from '@/lib/types'
 import { getBrowserTimezone } from '@/lib/tz'
 import styles from './WeightTab.module.css'
 
 const TZ = getBrowserTimezone()
-
-interface WeightLog {
-  id: number
-  berat: number
-  catatan: string
-  created_at: string
-}
 
 export default function WeightTab({ user }: { user: User | null }) {
   const [logs, setLogs] = useState<WeightLog[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [berat, setBerat] = useState('')
+  const [waistCm, setWaistCm] = useState('')
   const [catatan, setCatatan] = useState('')
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -43,19 +37,24 @@ export default function WeightTab({ user }: { user: User | null }) {
   async function save() {
     if (!berat || !user?.id) return
     const val = parseFloat(berat)
-    if (isNaN(val) || val < 20 || val > 300) return
+    if (isNaN(val) || val < 10 || val > 500) return
     setSaving(true)
     try {
+      const body: Record<string, unknown> = { berat: val, catatan }
+      if (waistCm) body.waist_cm = parseFloat(waistCm)
       const res = await fetch('/api/weight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ berat: val, catatan })
+        body: JSON.stringify(body)
       })
       const json = await res.json()
       if (json.success) {
         setLogs(prev => [json.data, ...prev])
         setBerat('')
+        setWaistCm('')
         setCatatan('')
+      } else {
+        setError(json.error || 'Gagal menyimpan')
       }
     } finally {
       setSaving(false)
@@ -96,6 +95,28 @@ export default function WeightTab({ user }: { user: User | null }) {
   const first = logs.length > 1 ? parseFloat(String(logs[logs.length - 1].berat)) : null
   const totalChange = latest !== null && first !== null ? (latest - first).toFixed(1) : null
 
+  // Waist insight
+  const waistLogs = logs.filter(l => l.waist_cm != null)
+  let waistInsight: { text: string; color: string } | null = null
+  if (waistLogs.length >= 2) {
+    const latestWaist = Number(waistLogs[0].waist_cm)
+    const oldestWaist = Number(waistLogs[waistLogs.length - 1].waist_cm)
+    const delta = latestWaist - oldestWaist
+    if (Math.abs(delta) >= 0.1) {
+      if (delta < 0) {
+        waistInsight = {
+          text: `Pinggang turun ${Math.abs(delta).toFixed(1)} cm — progress lemak tubuh bagus`,
+          color: 'var(--accent)',
+        }
+      } else {
+        waistInsight = {
+          text: `Pinggang naik ${delta.toFixed(1)} cm — perhatikan asupan kalori`,
+          color: 'var(--amber)',
+        }
+      }
+    }
+  }
+
   return (
     <div className={styles.wrap}>
       {error && <div className={styles.errorBox} onClick={() => setError(null)}>{error}</div>}
@@ -110,7 +131,7 @@ export default function WeightTab({ user }: { user: User | null }) {
               placeholder="0.0"
               value={berat}
               onChange={e => setBerat(e.target.value)}
-              min={20} max={300} step={0.1}
+              min={10} max={500} step={0.1}
               onKeyDown={e => e.key === 'Enter' && save()}
             />
             <span className={styles.beratUnit}>kg</span>
@@ -120,12 +141,21 @@ export default function WeightTab({ user }: { user: User | null }) {
           </button>
         </div>
         <input
+          type="number"
+          className={styles.catatanInput}
+          placeholder="Lingkar perut (cm) — opsional, contoh: 85"
+          value={waistCm}
+          onChange={e => setWaistCm(e.target.value)}
+          min={40} max={200} step={0.1}
+          style={{ marginBottom: '4px' }}
+        />
+        <input
           type="text"
           className={styles.catatanInput}
           placeholder="Catatan (opsional)"
           value={catatan}
           onChange={e => setCatatan(e.target.value)}
-          maxLength={100}
+          maxLength={200}
         />
       </div>
 
@@ -158,6 +188,13 @@ export default function WeightTab({ user }: { user: User | null }) {
               <div className={styles.statLbl}>Total perubahan</div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Waist insight */}
+      {waistInsight && (
+        <div className={styles.waistInsight} style={{ borderLeftColor: waistInsight.color, color: waistInsight.color }}>
+          📏 {waistInsight.text}
         </div>
       )}
 
@@ -228,7 +265,10 @@ export default function WeightTab({ user }: { user: User | null }) {
                   {log.catatan && <div className={styles.logCatatan}>{log.catatan}</div>}
                 </div>
                 <div className={styles.logRight}>
-                  <div className={styles.logBerat}>{w} <span>kg</span></div>
+                  <div className={styles.logBerat}>
+                    {w} <span>kg</span>
+                    {log.waist_cm != null && <span className={styles.logWaist}> · {Number(log.waist_cm)} cm</span>}
+                  </div>
                   {d !== null && (
                     <div className={styles.logDiff} style={{ color: d < 0 ? 'var(--accent)' : d > 0 ? 'var(--red)' : 'var(--muted)' }}>
                       {d > 0 ? '+' : ''}{d.toFixed(1)}
