@@ -65,7 +65,11 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
         const avgProtein = Math.round(days.reduce((s: number, d: { total_protein: number }) => s + Number(d.total_protein), 0) / days.length)
         const avgKarbo   = Math.round(days.reduce((s: number, d: { total_karbo: number }) => s + Number(d.total_karbo), 0) / days.length)
         const avgLemak   = Math.round(days.reduce((s: number, d: { total_lemak: number }) => s + Number(d.total_lemak), 0) / days.length)
-        const top = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, t, user.goal)[0]
+        const daysOnTarget = days.filter((d: { total_kalori: number; target_kalori: number }) => d.total_kalori <= d.target_kalori * 1.05).length
+        const top = getSaranList(avgKal, avgProtein, avgKarbo, avgLemak, t, user.goal, {
+          daysOnTarget,
+          totalDays: days.length,
+        })[0]
         if (top) setWeekInsight(top)
       })
       .catch(() => {})

@@ -35,11 +35,17 @@ export default function HeadlineInsight({ user, refreshKey, onStartLog }: { user
         const kalPct = Math.round((avgKal / target) * 100)
         const proteinTarget = Math.round((target * 0.25) / 4)
 
+        // Phase 3A: weekly net
+        const weeklyNet = daysWithData.reduce((s, d) => s + (d.total_kalori - target), 0)
+
         let h: Headline
         if (kalPct > 120) {
           h = { icon: '⚠️', text: `Rata-rata ${kalPct}% dari target minggu ini — kurangi 1 porsi nasi atau gorengan`, type: 'warn' }
         } else if (daysOnTarget >= 5) {
           h = { icon: '🎯', text: `${daysOnTarget}/7 hari dalam target minggu ini — luar biasa!`, type: 'good' }
+        } else if (weeklyNet < -1750 && daysWithData.length >= 3) {
+          const kgBurned = (Math.abs(weeklyNet) / 7700).toFixed(2)
+          h = { icon: '📉', text: `Defisit ${Math.abs(Math.round(weeklyNet)).toLocaleString('id-ID')} kkal minggu ini — setara ~${kgBurned} kg lemak terbakar`, type: 'good' }
         } else if (daysWithData.length >= 5 && kalPct <= 110) {
           h = { icon: '✅', text: `Konsisten mencatat ${daysWithData.length} hari minggu ini — pertahankan!`, type: 'good' }
         } else if (avgProtein < proteinTarget * 0.7) {

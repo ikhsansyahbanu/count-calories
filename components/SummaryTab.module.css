@@ -233,3 +233,61 @@
 .skeletonStatLbl    { height: 11px; width: 80%; }
 .skeletonChartTitle { height: 13px; width: 42%; margin-bottom: 16px; }
 .skeletonChart      { height: 150px; border-radius: var(--radius-sm); }
+
+/* Trend badge (Phase 3C) */
+.trendBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.trendImproving { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+.trendWorsening { background: var(--red-light); color: var(--red); border: 1px solid rgba(224,82,82,0.25); }
+.trendStable    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+
+/* Stat sub-text (Phase 3C "vs minggu lalu") */
+.statSub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-top: 3px;
+}
+.statSubDown { color: var(--accent); }
+.statSubUp   { color: var(--red); }
+
+/* Weekly net stat card (Phase 3A) */
+.netDefisit { color: var(--accent); }
+.netSurplus { color: var(--red); }
+
+/* ±kkal bar label (Phase 3A) */
+.barDelta {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1;
+  margin-top: 1px;
+  height: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.barDeltaDefisit { color: var(--accent); }
+.barDeltaSurplus { color: var(--red); }
+
+/* Consistency stat color (Phase 3D) */
+.consistGood   { color: var(--accent); }
+.consistMid    { color: var(--amber); }
+.consistBad    { color: var(--red); }
+
+/* Best day chip (Phase 3D) */
+.bestDayChip {
+  margin-top: 2px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}

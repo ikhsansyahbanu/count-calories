@@ -1,8 +1,89 @@
 import { getMacroTargets } from './macros'
+import { DaySummary } from './types'
 
 export interface SaranItem {
   type: 'warning' | 'danger' | 'good'
   text: string
+}
+
+export interface DayOfWeekPattern {
+  worstDay: string
+  worstAvg: number
+  bestDay: string
+  bestAvg: number
+}
+
+export type TrendResult = 'improving' | 'worsening' | 'stable'
+
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+
+// ─── Phase 3B ────────────────────────────────────────────────────────────────
+
+export function getDayOfWeekPattern(data: DaySummary[]): DayOfWeekPattern | null {
+  const daysWithData = data.filter(d => d.jumlah_makan > 0)
+  if (daysWithData.length < 3) return null
+
+  // Aggregate kalori per day-of-week
+  const sums: Record<number, number> = {}
+  const counts: Record<number, number> = {}
+  for (const d of daysWithData) {
+    const dow = new Date(d.tanggal + 'T00:00:00').getDay()
+    sums[dow] = (sums[dow] ?? 0) + d.total_kalori
+    counts[dow] = (counts[dow] ?? 0) + 1
+  }
+
+  const avgs = Object.entries(sums).map(([dow, sum]) => ({
+    dow: parseInt(dow),
+    avg: Math.round(sum / counts[parseInt(dow)]),
+  }))
+
+  if (avgs.length < 2) return null
+
+  const sorted = [...avgs].sort((a, b) => b.avg - a.avg)
+  return {
+    worstDay: DAY_NAMES[sorted[0].dow],
+    worstAvg: sorted[0].avg,
+    bestDay: DAY_NAMES[sorted[sorted.length - 1].dow],
+    bestAvg: sorted[sorted.length - 1].avg,
+  }
+}
+
+export function getPatternSaran(pattern: DayOfWeekPattern | null, target: number): SaranItem | null {
+  if (!pattern || pattern.worstAvg <= target * 1.15) return null
+  return {
+    type: 'warning',
+    text: `📅 Kalorimu rata-rata paling tinggi di hari ${pattern.worstDay} (${pattern.worstAvg.toLocaleString('id-ID')} kkal) — siapkan pilihan makan lebih ringan untuk hari itu.`,
+  }
+}
+
+// ─── Phase 3C ────────────────────────────────────────────────────────────────
+
+export function getTrend(thisAvg: number, lastAvg: number, target: number): TrendResult {
+  if (thisAvg < lastAvg - 50 && thisAvg <= target) return 'improving'
+  if (thisAvg > lastAvg + 50) return 'worsening'
+  return 'stable'
+}
+
+// ─── Phase 3D ────────────────────────────────────────────────────────────────
+
+export function getConsistencyInsight(daysOnTarget: number, total: number): SaranItem {
+  if (daysOnTarget === total && total > 0) {
+    return { type: 'good', text: 'Sempurna! Semua hari tercatat dalam target — pertahankan!' }
+  }
+  if (daysOnTarget < total / 2) {
+    return { type: 'danger', text: 'Lebih dari setengah hari melebihi target — coba mulai dengan 1 hari on-target besok.' }
+  }
+  return { type: 'good', text: `${daysOnTarget}/${total} hari dalam target — terus tingkatkan konsistensimu!` }
+}
+
+// ─── Phase 3E — Extended getSaranList ────────────────────────────────────────
+
+export interface SaranOpts {
+  daysOnTarget?: number
+  totalDays?: number
+  worstDay?: string
+  worstAvg?: number
+  target?: number
 }
 
 export function getSaranList(
@@ -12,11 +93,17 @@ export function getSaranList(
   avgLemak: number,
   target: number,
   goal?: string,
+  opts?: SaranOpts,
 ): SaranItem[] {
   const { proteinG, karboG, lemakG } = getMacroTargets(target, goal)
   const kalPct = Math.round((avgKal / target) * 100)
 
   const list: SaranItem[] = []
+
+  // Consistency insight first (Phase 3D/3E)
+  if (opts?.daysOnTarget !== undefined && opts?.totalDays && opts.totalDays > 0) {
+    list.push(getConsistencyInsight(opts.daysOnTarget, opts.totalDays))
+  }
 
   // Goal-aware calorie advice
   if (goal === 'bulking' && kalPct < 95) {
@@ -56,6 +143,13 @@ export function getSaranList(
     list.push({ type: 'danger', text: `Lemak rata-rata ${avgLemak}g/hari — melebihi batas. → Ganti gorengan dengan panggang/rebus, dan batasi santan.` })
   } else if (avgLemak > lemakG * 1.1) {
     list.push({ type: 'warning', text: `Lemak ${avgLemak}g/hari mendekati batas. → Kurangi 1 porsi makanan berminyak per hari, pilih metode masak lebih sehat.` })
+  }
+
+  // Pattern saran (Phase 3B/3E)
+  if (opts?.worstDay && opts?.worstAvg && opts.worstAvg > target * 1.15) {
+    const pattern: DayOfWeekPattern = { worstDay: opts.worstDay, worstAvg: opts.worstAvg, bestDay: '', bestAvg: 0 }
+    const ps = getPatternSaran(pattern, target)
+    if (ps) list.push(ps)
   }
 
   return list
