@@ -39,3 +39,11 @@ export function estimateWeeklyWeightChange(tdee: number, target: number): number
   const weekly = (deficit * 7) / 7700
   return Number(weekly.toFixed(2))
 }
+
+export function getMealContext(): string {
+  const h = new Date().getHours()
+  if (h < 10) return 'Makan Pagi'
+  if (h < 14) return 'Makan Siang'
+  if (h < 18) return 'Snack'
+  return 'Makan Malam'
+}

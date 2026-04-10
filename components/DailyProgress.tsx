@@ -4,7 +4,7 @@ import { User } from '@/lib/types'
 import { getSaranList } from '@/lib/insights'
 import { getBrowserTimezone } from '@/lib/tz'
 import { getMacroTargets } from '@/lib/macros'
-import { computeTDEE, estimateWeeklyWeightChange } from '@/lib/utils'
+import { computeTDEE, estimateWeeklyWeightChange, getMealContext } from '@/lib/utils'
 import styles from './DailyProgress.module.css'
 
 interface TodayData {
@@ -15,17 +15,11 @@ interface TodayData {
   jumlah_makan: number
   target_kalori: number
   streak: number
+  meal_slots?: Record<string, { count: number; kalori: number }>
 }
 
 type Status = 'empty' | 'low' | 'normal' | 'warning' | 'over'
 
-function getMealContext(): string {
-  const h = new Date().getHours()
-  if (h < 10) return 'sarapan'
-  if (h < 14) return 'makan siang'
-  if (h < 18) return 'camilan sore'
-  return 'makan malam'
-}
 
 interface WeekInsight {
   type: 'warning' | 'danger' | 'good'
@@ -93,7 +87,7 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
 
   const sisa = target - kalori
   const lebih = kalori - target
-  const mealCtx = getMealContext()
+  const mealCtx = getMealContext().toLowerCase()
   const isCutting = user.goal === 'cutting'
 
   const statusConfig: Record<Status, { msg: string; msgClass: string; fillClass: string }> = {
@@ -248,6 +242,25 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
               <div className={styles.macroLbl}>Lemak</div>
             </div>
           </div>
+
+          {data?.meal_slots && (
+            <div className={styles.mealSlotStrip}>
+              {(['Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack'] as const).map(slot => {
+                const info = data.meal_slots?.[slot]
+                return (
+                  <div key={slot} className={styles.mealSlot}>
+                    <span className={styles.mealSlotLabel}>
+                      {slot === 'Makan Pagi' ? 'Pagi' : slot === 'Makan Siang' ? 'Siang' : slot === 'Makan Malam' ? 'Malam' : 'Snack'}
+                    </span>
+                    {info
+                      ? <span className={styles.mealSlotKkal}>{info.kalori.toLocaleString('id-ID')}</span>
+                      : <span className={styles.mealSlotKkalEmpty}>–</span>
+                    }
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {macroHint && (
             <div className={styles.macroHint}>💡 {macroHint}</div>

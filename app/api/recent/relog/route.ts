@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool, { initDB, updateStreak, withTransaction } from '@/lib/db'
-// pool dipakai untuk query SELECT sebelum transaksi
 
 export const dynamic = 'force-dynamic'
 
@@ -11,24 +10,23 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const favorite_id = parseInt(body.favorite_id)
+    const log_id = parseInt(body.log_id)
     const keterangan = String(body.keterangan ?? '').trim().slice(0, 100)
     const target_kalori = Math.max(500, Math.min(10000, parseInt(body.target_kalori) || 2000))
 
-    if (!favorite_id || isNaN(favorite_id)) {
-      return NextResponse.json({ error: 'favorite_id diperlukan' }, { status: 400 })
+    if (!log_id || isNaN(log_id)) {
+      return NextResponse.json({ error: 'log_id diperlukan' }, { status: 400 })
     }
 
-    const fav = await pool.query(
-      `SELECT * FROM food_favorites WHERE id = $1 AND user_id = $2`,
-      [favorite_id, userId]
+    const logRes = await pool.query(
+      `SELECT * FROM food_logs WHERE id = $1 AND user_id = $2`,
+      [log_id, userId]
     )
-    if (fav.rows.length === 0) {
-      return NextResponse.json({ error: 'Favorit tidak ditemukan' }, { status: 404 })
+    if (logRes.rows.length === 0) {
+      return NextResponse.json({ error: 'Log tidak ditemukan' }, { status: 404 })
     }
 
-    console.log('[relog] userId:', userId, 'favorite_id:', favorite_id, 'fav:', fav.rows[0].nama)
-    const f = fav.rows[0]
+    const f = logRes.rows[0]
     const savedLog = await withTransaction(async (client) => {
       const r = await client.query(
         `INSERT INTO food_logs (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, saran, target_kalori, keterangan, confidence, manual)
@@ -41,16 +39,12 @@ export async function POST(req: NextRequest) {
         ]
       )
       if (userId) await updateStreak(userId, client)
-      await client.query(
-        `UPDATE food_favorites SET use_count = use_count + 1, last_used_at = NOW() WHERE id = $1`,
-        [favorite_id]
-      )
       return r.rows[0]
     })
 
     return NextResponse.json({ success: true, data: savedLog })
   } catch (err) {
-    console.error('[POST /api/favorites/relog]', err)
-    return NextResponse.json({ error: 'Gagal log ulang favorit' }, { status: 500 })
+    console.error('[POST /api/recent/relog]', err)
+    return NextResponse.json({ error: 'Gagal log ulang makanan terakhir' }, { status: 500 })
   }
 }

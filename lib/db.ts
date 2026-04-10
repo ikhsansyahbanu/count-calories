@@ -92,6 +92,8 @@ async function _runMigrations() {
 
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(10) DEFAULT 'maintain'`)
   await pool.query(`ALTER TABLE weight_logs ADD COLUMN IF NOT EXISTS waist_cm NUMERIC`)
+  await pool.query(`ALTER TABLE food_favorites ADD COLUMN IF NOT EXISTS use_count INTEGER DEFAULT 0`)
+  await pool.query(`ALTER TABLE food_favorites ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ`)
 
   // Indexes untuk query yang sering dipakai
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_food_logs_user_id ON food_logs(user_id)`)

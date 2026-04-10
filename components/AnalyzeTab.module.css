@@ -488,6 +488,102 @@
 }
 .favDeleteBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
 
+/* Recent Foods Panel */
+.recentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recentLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.recentChips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.recentChips::-webkit-scrollbar { display: none; }
+.recentChip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  flex-shrink: 0;
+  max-width: 140px;
+  transition: all 0.15s;
+  text-align: left;
+}
+.recentChip:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-light); }
+.recentChip:disabled { opacity: 0.5; cursor: not-allowed; }
+.recentChipLogged { border-color: var(--accent) !important; background: var(--accent-light) !important; }
+.recentChipName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 116px;
+}
+.recentChipKkal {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.recentError {
+  font-size: 0.78rem;
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* Quick Mode Toggle */
+.quickModeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 4px;
+}
+.quickModeLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.quickModeToggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px;
+}
+.quickModeBtn {
+  background: transparent;
+  border: none;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 12px;
+  transition: all 0.15s;
+}
+.quickModeBtnActive {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Favorite button in result card */
 .resultHeaderTop {
   display: flex;

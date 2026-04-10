@@ -307,3 +307,38 @@ button.weekInsightChip:hover { opacity: 0.85; }
   color: var(--accent);
   margin-top: 3px;
 }
+
+/* Meal Slot Strip */
+.mealSlotStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.mealSlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 4px;
+}
+.mealSlotLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mealSlotKkal {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.mealSlotKkalEmpty {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted2);
+}

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ success: true, data: [] })
 
     const result = await pool.query(
-      `SELECT * FROM food_favorites WHERE user_id = $1 ORDER BY created_at DESC`,
+      `SELECT * FROM food_favorites WHERE user_id = $1 ORDER BY use_count DESC, last_used_at DESC NULLS LAST, created_at DESC`,
       [userId]
     )
     return NextResponse.json({ success: true, data: result.rows })

@@ -1,4 +1,5 @@
 'use client'
+import { useRef, useEffect } from 'react'
 import styles from '../AnalyzeTab.module.css'
 
 export type KategoriOption = 'Makanan' | 'Minuman'
@@ -23,6 +24,8 @@ interface Props {
   suhu: MinumanSuhuOption
   setSuhu: (v: MinumanSuhuOption) => void
   onSubmit?: () => void
+  quickMode?: boolean
+  onToggleQuickMode?: () => void
 }
 
 export default function ManualMode({
@@ -34,25 +37,56 @@ export default function ManualMode({
   manis, setManis,
   suhu, setSuhu,
   onSubmit,
+  quickMode = false,
+  onToggleQuickMode,
 }: Props) {
+  const namaRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (quickMode) namaRef.current?.focus()
+  }, [quickMode])
+
   return (
     <div className={styles.manualForm}>
-      <div className={styles.manualField}>
-        <label className={styles.manualLabel}>Kategori</label>
-        <div className={styles.toggleGroup}>
-          {(['Makanan', 'Minuman'] as KategoriOption[]).map(k => (
-            <button key={k} type="button"
-              className={`${styles.toggleBtn} ${kategori === k ? styles.toggleBtnActive : ''}`}
-              onClick={() => setKategori(k)}>
-              {k === 'Makanan' ? '🍽️ Makanan' : '🥤 Minuman'}
-            </button>
-          ))}
+      {/* Quick / Lengkap toggle */}
+      <div className={styles.quickModeBar}>
+        <span className={styles.quickModeLabel}>Mode Input</span>
+        <div className={styles.quickModeToggle}>
+          <button
+            type="button"
+            className={`${styles.quickModeBtn} ${quickMode ? styles.quickModeBtnActive : ''}`}
+            onClick={() => !quickMode && onToggleQuickMode?.()}
+          >
+            Cepat
+          </button>
+          <button
+            type="button"
+            className={`${styles.quickModeBtn} ${!quickMode ? styles.quickModeBtnActive : ''}`}
+            onClick={() => quickMode && onToggleQuickMode?.()}
+          >
+            Lengkap
+          </button>
         </div>
       </div>
+      {!quickMode && (
+        <div className={styles.manualField}>
+          <label className={styles.manualLabel}>Kategori</label>
+          <div className={styles.toggleGroup}>
+            {(['Makanan', 'Minuman'] as KategoriOption[]).map(k => (
+              <button key={k} type="button"
+                className={`${styles.toggleBtn} ${kategori === k ? styles.toggleBtnActive : ''}`}
+                onClick={() => setKategori(k)}>
+                {k === 'Makanan' ? '🍽️ Makanan' : '🥤 Minuman'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.manualField}>
         <label className={styles.manualLabel}>{kategori === 'Makanan' ? 'Nama Makanan' : 'Nama Minuman'}</label>
         <input
+          ref={namaRef}
           type="text"
           placeholder={kategori === 'Makanan' ? 'contoh: Nasi goreng, Ayam bakar...' : 'contoh: Es teh manis, Kopi susu...'}
           value={nama}
@@ -77,7 +111,7 @@ export default function ManualMode({
         </div>
       </div>
 
-      {kategori === 'Makanan' && (
+      {!quickMode && kategori === 'Makanan' && (
         <>
           <div className={styles.manualField}>
             <label className={styles.manualLabel}>Metode Masak</label>
@@ -106,7 +140,7 @@ export default function ManualMode({
         </>
       )}
 
-      {kategori === 'Minuman' && (
+      {!quickMode && kategori === 'Minuman' && (
         <>
           <div className={styles.manualField}>
             <label className={styles.manualLabel}>Tingkat Kemanisan</label>

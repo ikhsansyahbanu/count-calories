@@ -124,7 +124,7 @@ function AppContent() {
       </div>
 
       <div className={styles.content}>
-        {tab === 'analyze' && <AnalyzeTab user={user} onAnalyzed={handleAnalyzed} />}
+        {tab === 'analyze' && <AnalyzeTab user={user} onAnalyzed={handleAnalyzed} refreshKey={refreshKey} />}
         {tab === 'history' && <HistoryTab user={user} refreshKey={refreshKey} onAnalyzed={handleAnalyzed} />}
         {tab === 'weight' && <WeightTab user={user} />}
         {tab === 'summary' && <SummaryTab user={user} refreshKey={refreshKey} />}

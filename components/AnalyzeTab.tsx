@@ -1,17 +1,19 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { FoodLog, FoodFavorite, User } from '@/lib/types'
+import { getMealContext } from '@/lib/utils'
 import FotoMode from './analyze/FotoMode'
 import ManualMode, {
   KategoriOption, PorsiOption, MetodeMasakOption, MinumanManisOption, MinumanSuhuOption,
 } from './analyze/ManualMode'
 import FavoritesPanel from './analyze/FavoritesPanel'
+import RecentFoodsPanel from './analyze/RecentFoodsPanel'
 import ResultCard from './analyze/ResultCard'
 import styles from './AnalyzeTab.module.css'
 
 type InputMode = 'foto' | 'manual'
 
-export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; onAnalyzed?: () => void }) {
+export default function AnalyzeTab({ user, onAnalyzed, refreshKey }: { user: User | null; onAnalyzed?: () => void; refreshKey?: number }) {
   const [inputMode, setInputMode] = useState<InputMode>('foto')
 
   // Foto state
@@ -30,11 +32,25 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
 
   // Shared state
   const [target, setTarget] = useState(user?.target_kalori || 2000)
-  const [keterangan, setKeterangan] = useState('')
+  const [keterangan, setKeterangan] = useState(() => getMealContext())
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<FoodLog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+
+  // Quick mode state (persisted)
+  const [quickMode, setQuickMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('manualQuickMode') === 'true'
+  })
+
+  function toggleQuickMode() {
+    setQuickMode(prev => {
+      const next = !prev
+      localStorage.setItem('manualQuickMode', String(next))
+      return next
+    })
+  }
 
   // Favorites state
   const [favorites, setFavorites] = useState<FoodFavorite[]>([])
@@ -128,6 +144,8 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
   async function relogFavorite(fav: FoodFavorite) {
     if (reloggingFavId != null) return
     setReloggingFavId(fav.id)
+    // Optimistic: trigger refresh immediately before API selesai
+    onAnalyzed?.()
     try {
       const res = await fetch('/api/favorites/relog', {
         method: 'POST',
@@ -135,12 +153,17 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
         body: JSON.stringify({ favorite_id: fav.id, keterangan, target_kalori: target }),
       })
       const json = await res.json()
-      if (!json.success) throw new Error(json.error || 'Gagal log ulang favorit.')
-      setLoggedFavIds(prev => new Set(prev).add(fav.id))
-      onAnalyzed?.()
-      setTimeout(() => setLoggedFavIds(prev => { const s = new Set(prev); s.delete(fav.id); return s }), 2000)
+      if (!json.success) {
+        setError(json.error || 'Gagal log ulang favorit.')
+        // Rollback: re-fetch data aktual
+        onAnalyzed?.()
+      } else {
+        setLoggedFavIds(prev => new Set(prev).add(fav.id))
+        setTimeout(() => setLoggedFavIds(prev => { const s = new Set(prev); s.delete(fav.id); return s }), 2000)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal log ulang favorit.')
+      onAnalyzed?.()
     } finally {
       setReloggingFavId(null)
     }
@@ -334,6 +357,14 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
 
   return (
     <div className={styles.wrap}>
+      <RecentFoodsPanel
+        userId={user?.id}
+        keterangan={keterangan}
+        target={target}
+        onAnalyzed={onAnalyzed}
+        refreshKey={refreshKey}
+      />
+
       {/* Mode toggle */}
       <div className={styles.modeToggle}>
         <button
@@ -382,6 +413,8 @@ export default function AnalyzeTab({ user, onAnalyzed }: { user: User | null; on
           manis={manualManis} setManis={setManualManis}
           suhu={manualSuhu} setSuhu={setManualSuhu}
           onSubmit={estimateManual}
+          quickMode={quickMode}
+          onToggleQuickMode={toggleQuickMode}
         />
       )}
 
