@@ -21,23 +21,30 @@ export async function GET(req: NextRequest) {
       userFilter = `AND user_id = $${params.length}`
     }
 
-    const result = await pool.query(`
-      SELECT
-        TO_CHAR(DATE(created_at AT TIME ZONE $2), 'YYYY-MM-DD') as tanggal,
-        SUM(total_kalori)::integer as total_kalori,
-        ROUND(SUM(protein_g)::numeric, 1) as total_protein,
-        ROUND(SUM(karbo_g)::numeric, 1) as total_karbo,
-        ROUND(SUM(lemak_g)::numeric, 1) as total_lemak,
-        COUNT(*)::integer as jumlah_makan,
-        MAX(target_kalori)::integer as target_kalori
-      FROM food_logs
-      WHERE created_at >= NOW() - ($1 || ' days')::interval
-      ${userFilter}
-      GROUP BY DATE(created_at AT TIME ZONE $2)
-      ORDER BY tanggal DESC
-    `, params)
+    const [result, userRes] = await Promise.all([
+      pool.query(`
+        SELECT
+          TO_CHAR(DATE(created_at AT TIME ZONE $2), 'YYYY-MM-DD') as tanggal,
+          SUM(total_kalori)::integer as total_kalori,
+          ROUND(SUM(protein_g)::numeric, 1) as total_protein,
+          ROUND(SUM(karbo_g)::numeric, 1) as total_karbo,
+          ROUND(SUM(lemak_g)::numeric, 1) as total_lemak,
+          COUNT(*)::integer as jumlah_makan
+        FROM food_logs
+        WHERE created_at >= NOW() - ($1 || ' days')::interval
+        ${userFilter}
+        GROUP BY DATE(created_at AT TIME ZONE $2)
+        ORDER BY tanggal DESC
+      `, params),
+      userId
+        ? pool.query(`SELECT target_kalori FROM users WHERE id = $1`, [userId])
+        : Promise.resolve({ rows: [] }),
+    ])
 
-    const response = NextResponse.json({ success: true, data: result.rows })
+    const currentTarget: number = userRes.rows[0]?.target_kalori ?? 2000
+    const rows = result.rows.map((row: Record<string, unknown>) => ({ ...row, target_kalori: currentTarget }))
+
+    const response = NextResponse.json({ success: true, data: rows })
     response.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=3600')
     return response
 

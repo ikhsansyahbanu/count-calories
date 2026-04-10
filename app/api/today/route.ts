@@ -12,27 +12,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const logsRes = await pool.query(
-      `SELECT
-         COALESCE(SUM(total_kalori), 0)::int AS kalori_hari_ini,
-         COALESCE(SUM(protein_g), 0)::numeric(6,1) AS protein,
-         COALESCE(SUM(karbo_g), 0)::numeric(6,1) AS karbo,
-         COALESCE(SUM(lemak_g), 0)::numeric(6,1) AS lemak,
-         COUNT(*)::int AS jumlah_makan,
-         MAX(target_kalori)::int AS target_kalori
-       FROM food_logs
-       WHERE DATE(created_at AT TIME ZONE 'Asia/Jakarta') = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
-         AND user_id = $1`,
-      [userId]
-    )
-
-    const streakRes = await pool.query(
-      `SELECT streak FROM users WHERE id = $1`,
-      [userId]
-    )
+    const [logsRes, userRes] = await Promise.all([
+      pool.query(
+        `SELECT
+           COALESCE(SUM(total_kalori), 0)::int AS kalori_hari_ini,
+           COALESCE(SUM(protein_g), 0)::numeric(6,1) AS protein,
+           COALESCE(SUM(karbo_g), 0)::numeric(6,1) AS karbo,
+           COALESCE(SUM(lemak_g), 0)::numeric(6,1) AS lemak,
+           COUNT(*)::int AS jumlah_makan
+         FROM food_logs
+         WHERE DATE(created_at AT TIME ZONE 'Asia/Jakarta') = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+           AND user_id = $1`,
+        [userId]
+      ),
+      pool.query(
+        `SELECT target_kalori, streak FROM users WHERE id = $1`,
+        [userId]
+      ),
+    ])
 
     const data = logsRes.rows[0]
-    const streak = streakRes.rows[0]?.streak ?? 0
+    const user = userRes.rows[0]
+    const target_kalori = user?.target_kalori ?? 2000
+    const streak = user?.streak ?? 0
 
     return NextResponse.json({
       success: true,
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
         karbo: parseFloat(data.karbo),
         lemak: parseFloat(data.lemak),
         jumlah_makan: data.jumlah_makan,
-        target_kalori: data.target_kalori,
+        target_kalori,
         streak,
       }
     })

@@ -128,7 +128,7 @@ export default function HistoryTab({ user, refreshKey, onAnalyzed }: { user: Use
         timeZone: TZ,
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
-      if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: row.target_kalori }
+      if (!map[key]) map[key] = { label: key, rows: [], total: 0, target: user?.target_kalori || row.target_kalori }
       map[key].rows.push(row)
       map[key].total += row.total_kalori
     })

@@ -54,6 +54,7 @@ function AppContent() {
 
   function handleUpdateUser(u: User) {
     setUser(u)
+    setRefreshKey(k => k + 1)
   }
 
   function handleAnalyzed() {
