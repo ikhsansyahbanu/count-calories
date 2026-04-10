@@ -11,6 +11,7 @@ export interface User {
   streak?: number
   last_log_date?: string
   goal?: 'cutting' | 'bulking' | 'maintain'
+  longest_streak?: number
 }
 
 export interface FoodLog {

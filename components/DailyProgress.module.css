@@ -342,3 +342,37 @@ button.weekInsightChip:hover { opacity: 0.85; }
   font-weight: 500;
   color: var(--muted2);
 }
+
+.shareRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.milestoneBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+  background: #fef9c3;
+  border: 1px solid #fbbf24;
+  color: #92400e;
+  animation: pulse 1.5s ease infinite;
+}
+
+.longestStreak {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.hintSkeleton {
+  height: 12px;
+  width: 80%;
+  background: var(--surface3);
+  border-radius: 6px;
+  animation: pulse 1.2s ease infinite;
+}

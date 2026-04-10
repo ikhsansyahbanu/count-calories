@@ -168,6 +168,21 @@
   animation: spin 0.8s linear infinite;
 }
 
+.skeleton {
+  background: var(--surface3);
+  border-radius: 6px;
+  animation: pulse 1.2s ease infinite;
+}
+.skeletonWrap { display: flex; flex-direction: column; gap: 10px; }
+.skeletonStatsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.skeletonStatCard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.skeletonStatVal { height: 22px; width: 60%; }
+.skeletonStatLbl { height: 10px; width: 80%; }
+.skeletonChart { height: 100px; border-radius: var(--radius-sm); }
+.skeletonLogItem { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.skeletonLogMain { height: 14px; width: 50%; }
+.skeletonLogSub { height: 10px; width: 35%; }
+
 .emptyState {
   text-align: center;
   padding: 3rem 2rem;

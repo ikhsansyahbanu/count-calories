@@ -1,5 +1,27 @@
 import { FoodItem, User } from './types'
 
+interface TodayShareData {
+  kalori_hari_ini: number
+  target_kalori: number
+  protein: number
+  karbo: number
+  lemak: number
+  streak?: number
+}
+
+export function buildShareText(data: TodayShareData, user: User): string {
+  const pct = Math.round((data.kalori_hari_ini / data.target_kalori) * 100)
+  const goalLabel = user.goal === 'cutting' ? 'Cutting' : user.goal === 'bulking' ? 'Bulking' : null
+  const lines = [
+    '📊 Kalori.AI Update',
+    `✅ Hari ini: ${data.kalori_hari_ini.toLocaleString('id-ID')} / ${data.target_kalori.toLocaleString('id-ID')} kkal (${pct}%)`,
+    `💪 Protein: ${data.protein}g · Karbo: ${data.karbo}g · Lemak: ${data.lemak}g`,
+  ]
+  if (data.streak && data.streak >= 2) lines.push(`🔥 Streak: ${data.streak} hari berturut-turut`)
+  if (goalLabel) lines.push(`🎯 Goal: ${goalLabel}`)
+  return lines.join('\n')
+}
+
 export function parseItems(items: FoodItem[] | string | undefined): FoodItem[] {
   if (!items) return []
   if (typeof items === 'string') {

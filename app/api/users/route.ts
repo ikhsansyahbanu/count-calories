@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const result = await pool.query(
-      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal, longest_streak
        FROM users WHERE id = $1`,
       [userId]
     )
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const result = await pool.query(
       `INSERT INTO users (nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, goal)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal`,
+       RETURNING id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal, longest_streak`,
       [nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, password_hash, goal ?? 'maintain']
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const result = await pool.query(
-      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal
+      `SELECT id, nama, berat_badan, tinggi_badan, usia, jenis_kelamin, aktivitas, target_kalori, streak, goal, longest_streak
        FROM users WHERE id = $1`,
       [userId]
     )

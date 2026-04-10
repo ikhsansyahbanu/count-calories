@@ -92,6 +92,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'ID tidak ditemukan' }, { status: 400 })
 
     const userId = parseInt(req.headers.get('x-user-id') || '0')
+    // Favorites tidak dihapus — mereka adalah snapshot independen (source_log_id di-set NULL via ON DELETE SET NULL)
     await pool.query('DELETE FROM food_logs WHERE id = $1 AND user_id = $2', [id, userId])
     return NextResponse.json({ success: true })
   } catch (err) {

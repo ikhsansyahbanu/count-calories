@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { User } from '@/lib/types'
 import { getSaranList } from '@/lib/insights'
 import { getBrowserTimezone } from '@/lib/tz'
 import { getMacroTargets } from '@/lib/macros'
-import { computeTDEE, estimateWeeklyWeightChange, getMealContext } from '@/lib/utils'
+import { computeTDEE, estimateWeeklyWeightChange, getMealContext, buildShareText } from '@/lib/utils'
+import ShareButton from './ShareButton'
 import styles from './DailyProgress.module.css'
 
 interface TodayData {
@@ -35,6 +36,9 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
   const [data, setData] = useState<TodayData | null>(null)
   const [loading, setLoading] = useState(false)
   const [weekInsight, setWeekInsight] = useState<WeekInsight | null>(null)
+  const [aiHint, setAiHint] = useState<string | null>(null)
+  const [hintLoading, setHintLoading] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!user?.id) {
@@ -50,6 +54,39 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [user?.id, refreshKey])
+
+  // AI hint fetch — only when meaningful data changes
+  useEffect(() => {
+    if (!data || data.jumlah_makan === 0 || !user?.id) {
+      setAiHint(null)
+      return
+    }
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+    const timer = setTimeout(() => ctrl.abort(), 4000)
+
+    setHintLoading(true)
+    fetch('/api/suggestion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kalori: data.kalori_hari_ini,
+        target: data.target_kalori,
+        protein: data.protein,
+        karbo: data.karbo,
+        lemak: data.lemak,
+        goal: user.goal ?? 'maintain',
+        jumlah_makan: data.jumlah_makan,
+        jam: new Date().getHours(),
+      }),
+      signal: ctrl.signal,
+    })
+      .then(r => r.json())
+      .then(json => { if (json.suggestion) setAiHint(json.suggestion) })
+      .catch(() => {})
+      .finally(() => { clearTimeout(timer); setHintLoading(false) })
+  }, [data?.kalori_hari_ini, data?.protein, data?.lemak, data?.jumlah_makan, user?.id])
 
   useEffect(() => {
     if (!user?.id) return
@@ -126,17 +163,23 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
 
   const streak = data?.streak ?? 0
   const showStreak = streak >= 1
+  const longestStreak = user.longest_streak ?? 0
+
+  const MILESTONES = [7, 14, 30, 60, 100]
+  const isMilestone = useMemo(() => MILESTONES.includes(streak), [streak])
 
   // Macro targets based on goal
   const { proteinG: proteinTarget, lemakG: lemakTarget } = getMacroTargets(target, user.goal)
   const protein = data?.protein ?? 0
   const lemak = data?.lemak ?? 0
 
-  let macroHint: string | null = null
+  // Static fallback hint — shown if AI fails or times out
+  let fallbackHint: string | null = null
   if (data && data.jumlah_makan > 0) {
-    if (protein < proteinTarget * 0.5) macroHint = `Protein baru ${protein}g — tambah telur, tahu, atau tempe`
-    else if (lemak > lemakTarget * 1.3) macroHint = `Lemak ${lemak}g sudah tinggi — hindari gorengan berikutnya`
+    if (protein < proteinTarget * 0.5) fallbackHint = `Protein baru ${protein}g — tambah telur, tahu, atau tempe`
+    else if (lemak > lemakTarget * 1.3) fallbackHint = `Lemak ${lemak}g sudah tinggi — hindari gorengan berikutnya`
   }
+  const displayHint = aiHint ?? fallbackHint
 
   // TDEE / target section for Phase 4G
   const computedTDEE = computeTDEE(user)
@@ -165,9 +208,14 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
             </span>
           )}
           {showStreak && (
-            <span className={`${styles.streak} ${streak === 1 ? styles.streakFirst : ''}`}>
-              {streak === 1 ? '🌱 Hari pertama!' : `🔥 ${streak} hari`}
-            </span>
+            <>
+              <span className={`${styles.streak} ${streak === 1 ? styles.streakFirst : ''}`}>
+                {streak === 1 ? '🌱 Hari pertama!' : `🔥 ${streak} hari`}
+              </span>
+              {isMilestone && (
+                <span className={styles.milestoneBadge}>🏆 {streak} hari!</span>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -266,9 +314,17 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
             </div>
           )}
 
-          {macroHint && (
-            <div className={styles.macroHint}>💡 {macroHint}</div>
+          {longestStreak > streak && longestStreak >= 3 && (
+            <div className={styles.longestStreak}>Terbaik: {longestStreak} hari</div>
           )}
+
+          {hintLoading && !displayHint ? (
+            <div className={styles.macroHint} style={{ background: 'transparent', border: 'none', padding: '6px 0' }}>
+              <div className={styles.hintSkeleton} />
+            </div>
+          ) : displayHint ? (
+            <div className={styles.macroHint}>💡 {displayHint}</div>
+          ) : null}
 
           {weekInsight && (
             onGoToSummary ? (
@@ -285,6 +341,10 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
               </div>
             )
           )}
+
+          <div className={styles.shareRow}>
+            <ShareButton text={buildShareText({ kalori_hari_ini: kalori, target_kalori: target, protein: data?.protein ?? 0, karbo: data?.karbo ?? 0, lemak: data?.lemak ?? 0, streak }, user)} label="Bagikan" />
+          </div>
         </>
       )}
     </div>

@@ -7,6 +7,7 @@ import {
   getSaranList, getWeightInsight, getDayOfWeekPattern,
   getTrend, SaranItem,
 } from '@/lib/insights'
+import ShareButton from './ShareButton'
 import styles from './SummaryTab.module.css'
 
 export default function SummaryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
@@ -163,6 +164,19 @@ export default function SummaryTab({ user, refreshKey }: { user: User | null; re
       <div className={styles.topBar}>
         <h2 className={styles.title}>Ringkasan</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Phase 5A: weekly share button */}
+          {days === 7 && daysWithData.length > 0 && (() => {
+            const streakVal = user?.streak ?? 0
+            const goalLabel = user?.goal === 'cutting' ? 'Cutting' : user?.goal === 'bulking' ? 'Bulking' : null
+            const lines = [
+              '📊 Kalori.AI — Ringkasan Mingguan',
+              `🔥 Rata-rata: ${avgKal.toLocaleString('id-ID')} kkal/hari`,
+              `✅ On-target: ${daysOnTarget}/${daysWithData.length} hari`,
+            ]
+            if (streakVal >= 2) lines.push(`🔥 Streak: ${streakVal} hari berturut-turut`)
+            if (goalLabel) lines.push(`🎯 Goal: ${goalLabel}`)
+            return <ShareButton text={lines.join('\n')} label="Bagikan" small />
+          })()}
           {/* Phase 3C: trend badge */}
           {trendResult && (
             <span className={`${styles.trendBadge} ${

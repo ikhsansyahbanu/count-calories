@@ -6,6 +6,24 @@ import styles from './WeightTab.module.css'
 
 const TZ = getBrowserTimezone()
 
+function ExportBeratButton({ tz }: { tz: string }) {
+  const [disabled, setDisabled] = useState(false)
+  function handleExport() {
+    setDisabled(true)
+    window.location.href = `/api/export?type=weight&days=365&tz=${encodeURIComponent(tz)}`
+    setTimeout(() => setDisabled(false), 2000)
+  }
+  return (
+    <button
+      onClick={handleExport}
+      disabled={disabled}
+      style={{ fontSize: '0.72rem', padding: '3px 10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--muted)', cursor: 'pointer', fontWeight: 600 }}
+    >
+      {disabled ? '⏳' : '⬇ Export'}
+    </button>
+  )
+}
+
 export default function WeightTab({ user }: { user: User | null }) {
   const [logs, setLogs] = useState<WeightLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -239,7 +257,23 @@ export default function WeightTab({ user }: { user: User | null }) {
 
       {/* Log list */}
       {loading ? (
-        <div className={styles.loadingWrap}><div className={styles.spinner} /></div>
+        <div className={styles.skeletonWrap}>
+          <div className={styles.skeletonStatsGrid}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className={styles.skeletonStatCard}>
+                <div className={`${styles.skeleton} ${styles.skeletonStatVal}`} />
+                <div className={`${styles.skeleton} ${styles.skeletonStatLbl}`} />
+              </div>
+            ))}
+          </div>
+          <div className={`${styles.skeleton} ${styles.skeletonChart}`} />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className={styles.skeletonLogItem}>
+              <div className={`${styles.skeleton} ${styles.skeletonLogMain}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonLogSub}`} />
+            </div>
+          ))}
+        </div>
       ) : logs.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>⚖️</div>
@@ -248,7 +282,10 @@ export default function WeightTab({ user }: { user: User | null }) {
         </div>
       ) : (
         <div className={styles.logList}>
-          <div className={styles.logListTitle}>Riwayat ({logs.length} catatan)</div>
+          <div className={styles.logListTitle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Riwayat ({logs.length} catatan)</span>
+            <ExportBeratButton tz={TZ} />
+          </div>
           {logs.map((log, i) => {
             const w = parseFloat(String(log.berat))
             const prevW = logs[i + 1] ? parseFloat(String(logs[i + 1].berat)) : null

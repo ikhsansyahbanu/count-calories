@@ -10,6 +10,7 @@ import DailyProgress from '@/components/DailyProgress'
 import HeadlineInsight from '@/components/HeadlineInsight'
 import AuthGate, { useAuth } from '@/components/AuthGate'
 import { UserProvider, useUser } from '@/components/UserContext'
+import { useReminderCheck } from '@/lib/hooks'
 import { User } from '@/lib/types'
 import styles from './page.module.css'
 
@@ -39,6 +40,38 @@ function AppContent() {
   const [showUserModal, setShowUserModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [darkMode, setDarkMode] = useState(false)
+  const [todayMeals, setTodayMeals] = useState(0)
+  const [reminderDismissed, setReminderDismissed] = useState(false)
+
+  // Fetch today's meal count for reminder
+  useEffect(() => {
+    if (!user?.id) return
+    fetch(`/api/today?_r=${refreshKey}`)
+      .then(r => r.json())
+      .then(json => { if (json.success) setTodayMeals(json.data?.jumlah_makan ?? 0) })
+      .catch(() => {})
+  }, [user?.id, refreshKey])
+
+  // Reset dismiss once per session
+  useEffect(() => {
+    const key = 'reminder_dismissed'
+    const dismissed = sessionStorage.getItem(key) === 'true'
+    setReminderDismissed(dismissed)
+  }, [])
+
+  const reminder = useReminderCheck({ jumlah_makan: todayMeals, target: user?.target_kalori ?? 2000, streak: user?.streak })
+
+  // Trigger browser notification if enabled
+  useEffect(() => {
+    if (!reminder.show) return
+    if (typeof window === 'undefined') return
+    const notifEnabled = localStorage.getItem('notif_enabled') === 'true'
+    if (!notifEnabled || Notification.permission !== 'granted') return
+    const sessionKey = `notif_sent_${reminder.message.slice(0, 20)}`
+    if (sessionStorage.getItem(sessionKey)) return
+    new Notification('Kalori.AI', { body: reminder.message, icon: '/icon-192.png' })
+    sessionStorage.setItem(sessionKey, '1')
+  }, [reminder.show, reminder.message])
 
   useEffect(() => {
     const saved = localStorage.getItem('theme')
@@ -110,6 +143,18 @@ function AppContent() {
       <DailyProgress user={user} refreshKey={refreshKey} onStartLog={() => setTab('analyze')} onGoToSummary={() => setTab('summary')} />
 
       <HeadlineInsight user={user} refreshKey={refreshKey} onStartLog={() => setTab('analyze')} />
+
+      {reminder.show && !reminderDismissed && (
+        <div className={styles.reminderBanner}>
+          <span className={styles.reminderIcon}>🔔</span>
+          <span className={styles.reminderMsg}>{reminder.message}</span>
+          <button className={styles.reminderCta} onClick={() => setTab('analyze')}>Catat Sekarang</button>
+          <button className={styles.reminderClose} onClick={() => {
+            setReminderDismissed(true)
+            sessionStorage.setItem('reminder_dismissed', 'true')
+          }}>✕</button>
+        </div>
+      )}
 
       <div className={styles.tabs}>
         {(['analyze', 'history', 'weight', 'summary'] as Tab[]).map(t => (

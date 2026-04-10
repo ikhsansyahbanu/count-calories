@@ -91,9 +91,12 @@ async function _runMigrations() {
   `)
 
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(10) DEFAULT 'maintain'`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0`)
   await pool.query(`ALTER TABLE weight_logs ADD COLUMN IF NOT EXISTS waist_cm NUMERIC`)
   await pool.query(`ALTER TABLE food_favorites ADD COLUMN IF NOT EXISTS use_count INTEGER DEFAULT 0`)
   await pool.query(`ALTER TABLE food_favorites ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ`)
+  // source_log_id: nullable tracing asal log, bukan FK yang mengikat lifecycle (ON DELETE SET NULL)
+  await pool.query(`ALTER TABLE food_favorites ADD COLUMN IF NOT EXISTS source_log_id INTEGER REFERENCES food_logs(id) ON DELETE SET NULL`)
 
   // Indexes untuk query yang sering dipakai
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_food_logs_user_id ON food_logs(user_id)`)
@@ -115,6 +118,9 @@ export function initDB(): Promise<void> {
   return _initPromise
 }
 
+// TODO(tz): 'Asia/Jakarta' hardcoded di sini dan di beberapa route (today, summary, history, export).
+// Untuk support multi-timezone, kirim timezone dari client via header atau query param,
+// lalu ganti semua AT TIME ZONE 'Asia/Jakarta' dengan parameter dinamis.
 export async function updateStreak(userId: number, client?: PoolClient) {
   const db = client ?? pool
   try {
@@ -136,7 +142,7 @@ export async function updateStreak(userId: number, client?: PoolClient) {
 
     if (!last_log_date) {
       await db.query(
-        `UPDATE users SET streak = 1, last_log_date = $1 WHERE id = $2`,
+        `UPDATE users SET streak = 1, last_log_date = $1, longest_streak = GREATEST(COALESCE(longest_streak, 0), 1) WHERE id = $2`,
         [today, userId]
       )
       return
@@ -147,13 +153,14 @@ export async function updateStreak(userId: number, client?: PoolClient) {
     if (diffDays === 0) {
       return
     } else if (diffDays === 1) {
+      const newStreak = streak + 1
       await db.query(
-        `UPDATE users SET streak = $1, last_log_date = $2 WHERE id = $3`,
-        [streak + 1, today, userId]
+        `UPDATE users SET streak = $1, last_log_date = $2, longest_streak = GREATEST(COALESCE(longest_streak, 0), $1) WHERE id = $3`,
+        [newStreak, today, userId]
       )
     } else {
       await db.query(
-        `UPDATE users SET streak = 1, last_log_date = $1 WHERE id = $2`,
+        `UPDATE users SET streak = 1, last_log_date = $1, longest_streak = GREATEST(COALESCE(longest_streak, 0), 1) WHERE id = $2`,
         [today, userId]
       )
     }

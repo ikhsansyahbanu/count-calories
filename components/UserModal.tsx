@@ -46,6 +46,29 @@ function hitungTDEE(berat: number, tinggi: number, usia: number, gender: string,
 export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
+  const [notifEnabled, setNotifEnabled] = useState(false)
+  const [notifSupported, setNotifSupported] = useState(false)
+
+  // Load notification state on mount
+  useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifSupported(true)
+      setNotifEnabled(localStorage.getItem('notif_enabled') === 'true' && Notification.permission === 'granted')
+    }
+  })
+
+  async function toggleNotif() {
+    if (!notifEnabled) {
+      const perm = await Notification.requestPermission()
+      if (perm === 'granted') {
+        localStorage.setItem('notif_enabled', 'true')
+        setNotifEnabled(true)
+      }
+    } else {
+      localStorage.setItem('notif_enabled', 'false')
+      setNotifEnabled(false)
+    }
+  }
   const [form, setForm] = useState({
     nama: currentUser.nama,
     berat_badan: String(currentUser.berat_badan || ''),
@@ -280,6 +303,42 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
                 style={{ marginTop: '0.5rem' }} />
             )}
           </div>
+
+          {/* Browser Notification opt-in */}
+          {notifSupported && (
+            <div className={styles.formGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <label className={styles.label} style={{ margin: 0 }}>Notifikasi pengingat makan</label>
+                <button
+                  type="button"
+                  onClick={toggleNotif}
+                  style={{
+                    background: notifEnabled ? 'var(--accent)' : 'var(--surface3)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 99,
+                    width: 44, height: 24,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute',
+                    top: 2, left: notifEnabled ? 22 : 2,
+                    width: 18, height: 18,
+                    background: '#fff',
+                    borderRadius: '50%',
+                    transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }} />
+                </button>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: 4 }}>
+                {notifEnabled ? 'Aktif — notifikasi muncul saat tab terbuka' : 'Matikan / aktifkan pengingat waktu makan'}
+              </div>
+            </div>
+          )}
 
           {error && <p style={{ color: 'var(--red)', fontSize: '0.875rem' }}>{error}</p>}
 

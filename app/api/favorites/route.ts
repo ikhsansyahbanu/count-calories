@@ -29,12 +29,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const nama = String(body.nama ?? '').trim().slice(0, 255)
     const { porsi, total_kalori, protein_g, karbo_g, lemak_g, items } = body
+    // source_log_id: optional, untuk tracing asal log (tidak mengikat lifecycle)
+    const source_log_id = body.source_log_id ? parseInt(String(body.source_log_id)) || null : null
 
     if (!nama) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
     }
 
-    // Cek duplikat
+    // Cek duplikat by nama
     const existing = await pool.query(
       `SELECT id FROM food_favorites WHERE user_id = $1 AND nama = $2`,
       [userId, nama]
@@ -44,9 +46,9 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await pool.query(
-      `INSERT INTO food_favorites (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [userId, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, JSON.stringify(items || [])]
+      `INSERT INTO food_favorites (user_id, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, items, source_log_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [userId, nama, porsi, total_kalori, protein_g, karbo_g, lemak_g, JSON.stringify(items || []), source_log_id]
     )
     return NextResponse.json({ success: true, data: result.rows[0] })
   } catch (err) {

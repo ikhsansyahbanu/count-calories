@@ -6,6 +6,20 @@ import { getBrowserTimezone } from '@/lib/tz'
 import LogDetail from './LogDetail'
 import styles from './HistoryTab.module.css'
 
+function ExportButton({ tz }: { tz: string }) {
+  const [disabled, setDisabled] = useState(false)
+  function handleExport() {
+    setDisabled(true)
+    window.location.href = `/api/export?days=90&tz=${encodeURIComponent(tz)}`
+    setTimeout(() => setDisabled(false), 2000)
+  }
+  return (
+    <button className={styles.refreshBtn} onClick={handleExport} disabled={disabled}>
+      {disabled ? '⏳ Ekspor...' : '⬇ Export'}
+    </button>
+  )
+}
+
 interface DayGroup {
   label: string
   rows: FoodLog[]
@@ -59,6 +73,8 @@ export default function HistoryTab({ user, refreshKey, onAnalyzed }: { user: Use
     setPage(1)
   }, [user?.id])
 
+  // refreshKey sengaja tidak masuk deps useCallback — hanya di useEffect agar force re-fetch
+  // tanpa recreate fungsi. Deps yang ada sudah minimal: user + pagination + filter state.
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -203,7 +219,10 @@ export default function HistoryTab({ user, refreshKey, onAnalyzed }: { user: Use
 
       <div className={styles.topBar}>
         <h2 className={styles.title}>Riwayat Makan</h2>
-        <button className={styles.refreshBtn} onClick={load}>Refresh</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ExportButton tz={TZ} />
+          <button className={styles.refreshBtn} onClick={load}>Refresh</button>
+        </div>
       </div>
 
       <div className={styles.searchWrap}>

@@ -1,0 +1,19 @@
+.btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.btn:active { opacity: 0.8; }
+
+.small {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+}

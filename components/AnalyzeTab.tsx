@@ -106,6 +106,7 @@ export default function AnalyzeTab({ user, onAnalyzed, refreshKey }: { user: Use
           karbo_g: result.karbo_g,
           lemak_g: result.lemak_g,
           items: result.items,
+          source_log_id: result.id ?? null,
         }),
       })
       const json = await res.json()
