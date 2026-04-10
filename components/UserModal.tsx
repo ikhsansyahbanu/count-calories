@@ -94,6 +94,22 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
     submittingRef.current = true
     setSubmitting(true)
     setError('')
+
+    // Optimistic update — update dashboard immediately before API responds
+    const prevUser = { ...currentUser }
+    const optimisticUser: User = {
+      ...currentUser,
+      nama: form.nama.trim(),
+      berat_badan: parseFloat(form.berat_badan) || 0,
+      tinggi_badan: parseFloat(form.tinggi_badan) || 0,
+      usia: parseInt(form.usia) || 0,
+      jenis_kelamin: form.jenis_kelamin,
+      aktivitas: form.aktivitas,
+      goal: form.goal as User['goal'],
+      target_kalori: parseInt(form.target_kalori) || 2000,
+    }
+    onUpdate(optimisticUser)
+
     try {
       const body: Record<string, unknown> = {
         nama: form.nama.trim(),
@@ -117,6 +133,7 @@ export default function UserModal({ onUpdate, currentUser, onClose }: Props) {
         onUpdate(json.data)
         onClose()
       } else {
+        onUpdate(prevUser) // rollback
         setError(json.error || 'Gagal menyimpan')
       }
     } finally {

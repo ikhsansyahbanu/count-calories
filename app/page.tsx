@@ -54,7 +54,6 @@ function AppContent() {
 
   function handleUpdateUser(u: User) {
     setUser(u)
-    setShowUserModal(false)
   }
 
   function handleAnalyzed() {
@@ -125,9 +124,9 @@ function AppContent() {
 
       <div className={styles.content}>
         {tab === 'analyze' && <AnalyzeTab user={user} onAnalyzed={handleAnalyzed} />}
-        {tab === 'history' && <HistoryTab user={user} refreshKey={refreshKey} />}
+        {tab === 'history' && <HistoryTab user={user} refreshKey={refreshKey} onAnalyzed={handleAnalyzed} />}
         {tab === 'weight' && <WeightTab user={user} />}
-        {tab === 'summary' && <SummaryTab user={user} />}
+        {tab === 'summary' && <SummaryTab user={user} refreshKey={refreshKey} />}
       </div>
     </main>
   )

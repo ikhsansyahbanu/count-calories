@@ -6,7 +6,7 @@ import MacroChart, { MacroTab } from './MacroChart'
 import { getSaranList, getWeightInsight, SaranItem } from '@/lib/insights'
 import styles from './SummaryTab.module.css'
 
-export default function SummaryTab({ user }: { user: User | null }) {
+export default function SummaryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
   const [data, setData] = useState<DaySummary[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(7)
@@ -47,7 +47,7 @@ export default function SummaryTab({ user }: { user: User | null }) {
     }
   }, [days, user?.id, user?.target_kalori])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, refreshKey])
 
   // Fetch weight logs for trend analysis (Phase 4E)
   useEffect(() => {

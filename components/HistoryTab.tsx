@@ -19,7 +19,7 @@ const PAGE_SIZE = 20
 const filterOptions: FilterOption[] = ['Semua', 'Makan Pagi', 'Makan Siang', 'Makan Malam', 'Snack', 'Manual']
 const TZ = getBrowserTimezone()
 
-export default function HistoryTab({ user, refreshKey }: { user: User | null; refreshKey?: number }) {
+export default function HistoryTab({ user, refreshKey, onAnalyzed }: { user: User | null; refreshKey?: number; onAnalyzed?: () => void }) {
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -85,13 +85,20 @@ export default function HistoryTab({ user, refreshKey }: { user: User | null; re
   useEffect(() => { load() }, [load, refreshKey])
 
   async function deleteLog(id: number) {
-    const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
+    // Optimistic: remove from list immediately
+    const removed = logs.find(l => l.id === id)
+    setLogs(prev => prev.filter(l => l.id !== id))
+    setTotal(prev => prev - 1)
     setConfirmDeleteId(null)
+
+    const res = await fetch(`/api/history?id=${id}`, { method: 'DELETE' })
     if (!res.ok) {
       setError('Gagal menghapus log. Coba lagi.')
+      if (removed) await load() // rollback
       return
     }
     await load()
+    onAnalyzed?.()
   }
 
   function startEdit(row: FoodLog) {
