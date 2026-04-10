@@ -20,7 +20,7 @@ export default function HeadlineInsight({ user, refreshKey, onStartLog }: { user
     setLoading(true)
     setNoData(false)
     const tz = getBrowserTimezone()
-    fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}`)
+    fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}&_r=${refreshKey ?? 0}`)
       .then(r => r.json())
       .then(json => {
         if (!json.success) return

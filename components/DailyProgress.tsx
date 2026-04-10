@@ -48,7 +48,7 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
       return
     }
     setLoading(true)
-    fetch(`/api/today`)
+    fetch(`/api/today?_r=${refreshKey ?? 0}`)
       .then(r => r.json())
       .then(json => {
         if (json.success) setData(json.data)
@@ -60,7 +60,7 @@ export default function DailyProgress({ user, refreshKey, onStartLog, onGoToSumm
   useEffect(() => {
     if (!user?.id) return
     const tz = getBrowserTimezone()
-    fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}`)
+    fetch(`/api/summary?days=7&tz=${encodeURIComponent(tz)}&_r=${refreshKey ?? 0}`)
       .then(r => r.json())
       .then(json => {
         if (!json.success) return

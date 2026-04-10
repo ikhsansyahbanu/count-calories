@@ -18,7 +18,7 @@ export default function SummaryTab({ user, refreshKey }: { user: User | null; re
     setLoading(true)
     try {
       const tz = getBrowserTimezone()
-      const res = await fetch(`/api/summary?days=${days}&tz=${encodeURIComponent(tz)}`)
+      const res = await fetch(`/api/summary?days=${days}&tz=${encodeURIComponent(tz)}&_r=${refreshKey ?? 0}`)
       const json = await res.json()
       if (json.success) {
         const raw: DaySummary[] = json.data
@@ -45,9 +45,9 @@ export default function SummaryTab({ user, refreshKey }: { user: User | null; re
     } finally {
       setLoading(false)
     }
-  }, [days, user?.id, user?.target_kalori])
+  }, [days, user?.id, user?.target_kalori, refreshKey])
 
-  useEffect(() => { load() }, [load, refreshKey])
+  useEffect(() => { load() }, [load])
 
   // Fetch weight logs for trend analysis (Phase 4E)
   useEffect(() => {
